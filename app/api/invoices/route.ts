@@ -10,7 +10,7 @@ const FIAT = new Set(["USD"]);
  * Creates a CipherPay invoice for live tracking. Two cases only:
  *  - kind "invoice": the creator pasted THEIR OWN CipherPay API key. We use it for this one
  *    request to CipherPay and drop it. It is never stored, logged, returned or put in a link.
- *  - kind "tip" for the deployment owner's own tip jar (ZECLINK_OWNER_HANDLE): uses the
+ *  - kind "tip" for the deployment owner's own open-amount link (old tip jar) (ZECLINK_OWNER_HANDLE): uses the
  *    server's key. The server key is never used for anyone else's invoice or tip jar.
  * We send CipherPay NO label, memo, tip message, payee or payer data. Just an amount and a generic name.
  */
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
   } else {
     const owner = ownerHandle();
     if (!owner || String(body.handle ?? "").toLowerCase() !== owner) {
-      return Response.json({ error: "Live tracking isn't set up for this tip jar." }, { status: 409 });
+      return Response.json({ error: "Live tracking isn't set up for this link." }, { status: 409 });
     }
     key = process.env.CIPHERPAY_API_KEY!.trim();
   }
@@ -57,7 +57,7 @@ export async function POST(req: Request) {
     const res = await fetch(`${cipherpayBase()}/api/invoices`, {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ amount, currency, product_name: kind === "tip" ? "ZecLink tip" : "ZecLink invoice" }),
+      body: JSON.stringify({ amount, currency, product_name: "ZecLink payment" }),
       cache: "no-store",
       signal: AbortSignal.timeout(10000),
     });

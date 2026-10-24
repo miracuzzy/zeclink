@@ -1,17 +1,17 @@
 import Link from "next/link";
 
 const who = [
-  { t: "Creators", d: "A tip jar for your bio or stream. Fans can add a private message." },
-  { t: "Sellers and small shops", d: "An invoice per order, or one QR on the counter at your stall." },
-  { t: "Freelancers", d: "Send a client an invoice with a due date and a memo." },
+  { t: "Invoice a client", d: "Set the amount, add a due date and a memo, send the link. Great for freelancers." },
+  { t: "Pay what you want", d: "Leave the amount open for supporters, fans or donations. They can add a private message." },
+  { t: "Shop checkout", d: "One link or QR per order, or an open-amount QR on the counter at your stall." },
   { t: "Communities and organizers", d: "Collect dues, ticket money or donations without a public list of who paid." },
 ];
 
 const points = [
   { t: "Shielded only", d: "ZecLink refuses transparent t-addresses. Amount, sender and receiver stay encrypted on-chain." },
-  { t: "No database of you", d: "Invoice details ride in the link's #fragment, which browsers never send to our server." },
+  { t: "No database of you", d: "Payment details ride in the link's #fragment, which browsers never send to our server." },
   { t: "Your wallet, your money", d: "Paste your own shielded address. Money goes straight to you. We never hold funds or keys." },
-  { t: "Optional live tracking", d: "Have a CipherPay account? Add your key once per invoice and the page shows the payment land, with a receipt." },
+  { t: "Optional live tracking", d: "Have a CipherPay account? Add your key to a fixed-amount link and the page shows the payment land, with a receipt." },
 ];
 
 export default function Home() {
@@ -25,15 +25,12 @@ export default function Home() {
           Private payment links for anyone who gets paid in <span className="text-zec">ZEC</span>.
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-lg text-zinc-400">
-          Make an invoice or a tip jar link in seconds and get paid in shielded ZEC. Nobody gets a map of your money. Not the
+          One link for every way you get paid: a fixed amount like an invoice, or an open amount the payer picks. Nobody gets a map of your money. Not the
           person paying, not a block explorer, not us.
         </p>
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <Link href="/new" className="btn-primary px-6">
-            Create an invoice
-          </Link>
-          <Link href="/tip" className="btn-ghost px-6 py-3">
-            Make a tip jar
+            Make a payment link
           </Link>
         </div>
       </section>
@@ -72,7 +69,7 @@ export default function Home() {
         <h2 className="mb-4 text-lg font-semibold">How it works</h2>
         <ol className="space-y-3 text-sm text-zinc-300">
           <li>
-            <b className="text-zec">1.</b> Enter your shielded address, the amount and what it&apos;s for.
+            <b className="text-zec">1.</b> Enter your shielded address and what it&apos;s for. Add an amount, or leave it open.
           </li>
           <li>
             <b className="text-zec">2.</b> Share the link. Whoever is paying sees a big QR code and a one-tap &quot;open in wallet&quot; button

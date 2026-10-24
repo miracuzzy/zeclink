@@ -12,7 +12,7 @@ interface Props {
   address: string;
   amountZec: string;
   memo?: string;
-  /** What to call the memo on the copy button: "memo" for invoices, "message" for tips. */
+  /** What to call the memo on the copy button: "memo" for fixed links, "message" when the payer writes one. */
   memoLabel?: "memo" | "message";
   provider: "direct" | "cipherpay";
   network: "testnet" | "mainnet";

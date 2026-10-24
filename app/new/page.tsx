@@ -9,7 +9,7 @@ import { fmtFiat, forgetAddress, loadSavedAddress, saveAddress, useConfig, useRa
 import { checkAddress, MAX_LIVE_MEMO_BYTES, MAX_MEMO_BYTES, normaliseZec, utf8ByteLength } from "@/lib/zcash";
 import { encodePayload, randomId, type InvoicePayload } from "@/lib/payload";
 
-export default function NewInvoice() {
+export default function NewPaymentLink() {
   const cfg = useConfig();
   const rates = useRates();
   const [name, setName] = useState("");
@@ -50,7 +50,9 @@ export default function NewInvoice() {
   const memoLimit = usesProvider ? MAX_LIVE_MEMO_BYTES : MAX_MEMO_BYTES;
   const usd = zec ? fmtFiat(Number(zec), rates?.usd, "USD") : null;
 
-  const valid = !!zec && memoBytes <= memoLimit && (usesProvider || (addr.ok && !netMismatch));
+  // Empty amount = open amount, the payer chooses. Live tracking needs a fixed amount (the key is used once, now).
+  const amountOk = amount.trim() === "" ? !usesProvider : !!zec;
+  const valid = amountOk && memoBytes <= memoLimit && (usesProvider || (addr.ok && !netMismatch));
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -98,11 +100,11 @@ export default function NewInvoice() {
           p: "direct",
           id: randomId(),
           a: address.trim(),
-          z: zec!,
+          z: zec || undefined,
           l: label.trim() || undefined,
           m: memo.trim() || undefined,
           n: name.trim() || undefined,
-          d: due || undefined,
+          d: (zec && due) || undefined,
           c: Date.now(),
         };
       }
@@ -119,19 +121,19 @@ export default function NewInvoice() {
   if (link) {
     return (
       <div className="mx-auto max-w-md space-y-5">
-        <h1 className="text-2xl font-bold">Your invoice link is ready</h1>
+        <h1 className="text-2xl font-bold">Your payment link is ready</h1>
         <ModeBanner live={linkLive} network={cfg?.network ?? "testnet"} compact />
         <div className="card space-y-4">
-          <Qr value={link} size={220} label="QR code of the invoice page link" />
+          <Qr value={link} size={220} label="QR code of the payment link" />
           <code className="block break-all rounded-lg bg-black/40 p-3 text-xs text-zinc-300">{link}</code>
           <div className="grid grid-cols-2 gap-2">
             <CopyButton text={link} label="Copy link" />
             <a className="btn-ghost" href={link}>
-              Open invoice
+              Open link
             </a>
           </div>
           <p className="text-xs text-zinc-500">
-            Everything after the <span className="font-mono">#</span> is the invoice itself. It never reaches our server, so keep
+            Everything after the <span className="font-mono">#</span> is the payment request itself. It never reaches our server, so keep
             the link somewhere safe. We can&apos;t get it back for you.
           </p>
         </div>
@@ -145,9 +147,9 @@ export default function NewInvoice() {
   return (
     <form onSubmit={submit} className="mx-auto max-w-md space-y-5">
       <div>
-        <h1 className="text-2xl font-bold">New invoice</h1>
-        <p className="text-sm text-zinc-400">Ask anyone for a payment in shielded ZEC. Takes 30 seconds.</p>
-        <p className="mt-1 text-sm text-zinc-500">All you need is your address and an amount. No account, no sign up.</p>
+        <h1 className="text-2xl font-bold">Make a payment link</h1>
+        <p className="text-sm text-zinc-400">Get paid in shielded ZEC. Set an amount, or leave it open and let the payer choose.</p>
+        <p className="mt-1 text-sm text-zinc-500">All you need is your address. No account, no sign up.</p>
       </div>
 
       <div>
@@ -160,7 +162,7 @@ export default function NewInvoice() {
       {usesProvider ? (
         <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-zinc-400">
           With live tracking on, the payment goes to the wallet linked to <b>your</b> CipherPay account, using a fresh one-time
-          address for this invoice. The address box is skipped.
+          address for this payment. The address box is skipped.
         </div>
       ) : (
         <div>
@@ -217,7 +219,7 @@ export default function NewInvoice() {
 
       <div>
         <label className="label" htmlFor="amount">
-          Amount (ZEC)
+          Amount (ZEC) <span className="text-zinc-600">(optional)</span>
         </label>
         <input
           id="amount"
@@ -235,8 +237,10 @@ export default function NewInvoice() {
             </>
           ) : amount && !zec ? (
             <span className="text-red-400">Enter a positive amount with at most 8 decimals.</span>
+          ) : usesProvider ? (
+            <span className={touched ? "text-red-400" : ""}>Live tracking needs a fixed amount.</span>
           ) : (
-            "Up to 8 decimals."
+            "Leave it empty to let the payer choose, like a tip or support link."
           )}
         </p>
       </div>
@@ -245,12 +249,12 @@ export default function NewInvoice() {
         <label className="label" htmlFor="label">
           What&apos;s it for?
         </label>
-        <input id="label" className="input" maxLength={80} value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Order #12, event ticket, logo design…" />
+        <input id="label" className="input" maxLength={80} value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Order #12, logo design, support my work…" />
       </div>
 
       <div>
         <label className="label" htmlFor="memo">
-          Memo <span className="text-zinc-600">(optional, encrypted on-chain)</span>
+          Memo or note <span className="text-zinc-600">(optional, encrypted on-chain)</span>
         </label>
         <textarea id="memo" className="input min-h-[70px]" value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="INV-0042" />
         <p className={`hint ${memoBytes > memoLimit ? "text-red-400" : ""}`}>
@@ -261,15 +265,16 @@ export default function NewInvoice() {
 
       <div>
         <label className="label" htmlFor="due">
-          Due date <span className="text-zinc-600">(optional)</span>
+          Due date <span className="text-zinc-600">(optional, only with an amount)</span>
         </label>
-        <input id="due" type="date" className="input" value={due} onChange={(e) => setDue(e.target.value)} />
+        <input id="due" type="date" className="input disabled:opacity-40" disabled={!zec} value={zec ? due : ""} onChange={(e) => setDue(e.target.value)} />
       </div>
 
       <details className="rounded-xl border border-white/10 p-3 text-sm" data-testid="advanced">
         <summary className="cursor-pointer select-none text-zinc-400">Advanced</summary>
         <p className="hint mt-2">
-          Not needed. Turn this on if you want the invoice to show paid by itself.
+          Not needed. Turn this on if you want the link to show paid by itself. Only for a fixed amount: we use your key
+          once, right now, and never save it, so links where the payer picks the amount are always direct payments.
         </p>
         <label className="mt-3 flex items-center gap-2 text-zinc-300">
           <input type="checkbox" checked={showKey} onChange={(e) => setShowKey(e.target.checked)} />
@@ -299,7 +304,7 @@ export default function NewInvoice() {
               placeholder={cfg?.network === "mainnet" ? "cpay_sk_…" : "cpay_sk_… (testnet key)"}
             />
             <p className="hint">
-              The invoice page will show when the payment lands. We use the key once to make this invoice and then drop it. It&apos;s never saved or put in the link.{" "}
+              The link will show when the payment lands. We use the key once to set up this payment and then drop it. It&apos;s never saved or put in the link.{" "}
               <Link href="/privacy" className="underline">More</Link>
             </p>
           </div>
@@ -309,7 +314,7 @@ export default function NewInvoice() {
       {err && <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-300">{err}</p>}
 
       <button className="btn-primary w-full" disabled={busy || !cfg}>
-        {busy ? "Creating…" : "Create invoice link"}
+        {busy ? "Creating…" : "Create payment link"}
       </button>
       <p className="text-center text-xs text-zinc-500">
         Nothing is saved on our server. <Link href="/privacy" className="underline">How?</Link>

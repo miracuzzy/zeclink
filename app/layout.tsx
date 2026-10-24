@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE),
   title: "ZecLink: private payment links for anyone who gets paid in ZEC",
   description:
-    "Invoice and tip links for shielded Zcash. For creators, shops, freelancers, communities and anyone else who gets paid. No account needed.",
+    "Private payment links for shielded Zcash, with a fixed or open amount. For freelancers, shops, creators, communities and anyone else who gets paid. No account needed.",
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "32x32" },
@@ -50,10 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </Link>
             <div className="flex items-center gap-1 text-sm">
               <Link href="/new" className="rounded-lg px-3 py-1.5 text-zinc-300 hover:text-white">
-                Invoice
-              </Link>
-              <Link href="/tip" className="rounded-lg px-3 py-1.5 text-zinc-300 hover:text-white">
-                Tip jar
+                Make a link
               </Link>
               <Link href="/privacy" className="rounded-lg px-3 py-1.5 text-zinc-300 hover:text-white">
                 Privacy

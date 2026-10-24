@@ -1,11 +1,11 @@
-// Invoice / tip-jar data lives in the URL *fragment* (#…). Browsers never send the
+// Payment link data lives in the URL *fragment* (#…). Browsers never send the
 // fragment to the server, so the server (and its logs / CDN) never sees the address,
 // amount, memo or label. Nothing is stored in a database.
 import { base64UrlDecodeBytes, base64UrlEncodeBytes } from "./zcash";
 
 // "direct": pay straight to the creator's own address, no tracking (default).
 // "cipherpay": creator's own CipherPay account made this invoice, status is tracked live.
-// "owner": tip jar of this deployment's owner, tracked with the server's own CipherPay key.
+// "owner": this deployment owner's own open-amount link, tracked with the server's own CipherPay key.
 // "demo": links made by older versions; treated as "direct".
 export type ProviderId = "direct" | "cipherpay" | "owner" | "demo";
 
@@ -15,7 +15,7 @@ export interface InvoicePayload {
   p: ProviderId;
   id: string;
   a?: string; // receiving address (direct mode)
-  z: string; // amount in ZEC (string, ≤ 8 dp)
+  z?: string; // amount in ZEC (string, ≤ 8 dp). Missing = open amount, the payer chooses.
   l?: string; // label / what it's for
   m?: string; // memo
   n?: string; // payee display name
@@ -26,8 +26,11 @@ export interface InvoicePayload {
   e?: string; // provider expiry ISO
   mc?: string; // provider memo code
   f?: { cur: string; amt: number }; // fiat pricing used with provider
+  h?: string; // owner handle (p "owner", open amount only)
+  s?: string[]; // suggested amounts in ZEC (open amount)
 }
 
+/** Old tip jar links (/t/<handle>#…). Still opened, as an open-amount payment link. */
 export interface TipPayload {
   v: 1;
   k: "tip";

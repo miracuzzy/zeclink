@@ -2,7 +2,7 @@ export const metadata = { title: "Privacy | ZecLink" };
 
 const rows: [string, string, string][] = [
   ["Your address, amount, label, memo, due date", "Only inside the link, after the #", "Browsers never send the # part to a server, so ZecLink's server, CDN and logs never see it."],
-  ["Invoice database", "None", "There's no database. Close the tab and the only copy is the link you shared."],
+  ["Payment link database", "None", "There's no database. Close the tab and the only copy is the link you shared."],
   ["Wallets and accounts", "We don't make any", "ZecLink never creates, holds or touches a wallet. You use your own and keep your own keys."],
   ["Payer identity, IP, wallet", "Not collected", "No accounts, no cookies, no analytics, no fingerprinting. The payer's wallet talks to the Zcash network, not to us."],
   ["Spending keys and seed phrases", "Never", "ZecLink never asks for them."],
@@ -58,11 +58,11 @@ export default function Privacy() {
         <ul className="list-disc space-y-1 pl-5">
           <li>
             If you have a CipherPay account (it holds a read-only viewing key for <b>your</b> wallet), you can paste its API key when
-            making an invoice. Your browser sends it to ZecLink&apos;s server once, the server uses it for that single request to
+            making a fixed-amount payment link. Your browser sends it to ZecLink&apos;s server once, the server uses it for that single request to
             CipherPay and drops it. It&apos;s never saved, logged, put in the link or kept in your browser.
           </li>
           <li>
-            CipherPay gets only an <b>amount</b> and the generic name &quot;ZecLink invoice&quot;. Your label, memo, name and due date
+            CipherPay gets only an <b>amount</b> and the generic name &quot;ZecLink payment&quot;. Your label, memo, name and due date
             never go to its API. It returns a fresh one-time address in your wallet, so separate payments can&apos;t be linked
             on-chain.
           </li>
@@ -72,14 +72,15 @@ export default function Privacy() {
             by its unique address, so it doesn&apos;t need the memo.
           </li>
           <li>
-            <b>Who sees what:</b> CipherPay sees the invoice amount and, using your viewing key, the payment that comes in. Since it
+            <b>Who sees what:</b> CipherPay sees the amount and, using your viewing key, the payment that comes in. Since it
             holds that viewing key, it could technically read the memo too. Nobody else sees any of it. The page checks status
             through ZecLink&apos;s own server (<span className="font-mono">/api/status/&lt;id&gt;</span>), so the payer&apos;s browser
             never talks to CipherPay.
           </li>
           <li>
-            Tip jars can&apos;t use your own CipherPay key yet. Each tip needs a fresh invoice, which would mean keeping your key, and
-            we won&apos;t do that. So tip jars are direct payments (the site owner&apos;s own jar is the only exception).
+            Links with an open amount (the payer picks it) can&apos;t use your own CipherPay key. Each payment would need a fresh
+            CipherPay invoice made later, which would mean keeping your key, and we won&apos;t do that. So open-amount links are
+            direct payments (this site owner&apos;s own link is the only exception).
           </li>
         </ul>
       </section>
@@ -87,13 +88,13 @@ export default function Privacy() {
       <section className="card space-y-3 text-sm text-zinc-300">
         <h2 className="text-lg font-semibold text-zinc-100">Honest limits</h2>
         <ul className="list-disc space-y-1 pl-5">
-          <li>Anyone you give the link to can read the invoice. Share it like you&apos;d share an invoice PDF.</li>
+          <li>Anyone you give the link to can read the payment details. Share it like you&apos;d share an invoice PDF.</li>
           <li>
-            Like any website, the host (Vercel) sees page paths and visitor IPs. Paths only hold a random id or the CipherPay invoice
+            Like any website, the host (Vercel) sees page paths and visitor IPs. Paths only hold a random id or the CipherPay payment
             id, never the address or amount.
           </li>
           <li>The USD estimate comes from CipherPay&apos;s public price feed, fetched by our server, not your browser.</li>
-          <li>The payer trusts the link sender to give the right address, same as with any invoice.</li>
+          <li>The payer trusts the link sender to give the right address, same as with any invoice or bank details.</li>
         </ul>
       </section>
     </article>

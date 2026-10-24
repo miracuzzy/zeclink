@@ -1,13 +1,13 @@
 # ZecLink: private payment links for anyone who gets paid in ZEC
 
-**Invoice and tip links for shielded Zcash.** Paste your own shielded address, share a link, get paid in private. Nobody
+**Payment links for shielded Zcash, with a fixed or open amount.** Paste your own shielded address, share a link, get paid in private. Nobody
 gets a map of your money. Not the person paying, not a block explorer, not ZecLink.
 
 Made for anyone who gets paid, for example:
 
-- **Creators**: a tip jar for your bio or stream, with private messages from fans.
-- **Sellers and small shops**: an invoice per order, or one QR on the counter.
-- **Freelancers**: an invoice with a due date and a memo for each client.
+- **Invoice a client**: a fixed amount with a due date and a memo.
+- **Pay what you want**: an open-amount link for supporters, fans or donations, with private messages.
+- **Shop checkout**: one link per order, or one open-amount QR on the counter.
 - **Communities and organizers**: dues, tickets or donations, without a public list of who paid.
 
 ZecLink never creates or holds wallets, accounts or funds. You bring your own wallet (for example [Zingo](https://zingolabs.org)
@@ -17,9 +17,12 @@ or [Zodl, formerly Zashi](https://zodl.com/download/)).
 
 ## What it does
 
-- **Invoices** (`/new` → `/i/<id>#…`): your shielded address, amount in ZEC (with a USD estimate), what it's for, memo, due date.
-  The payer gets a big QR code (ZIP-321), an "Open in wallet" button, copy buttons and the raw URI as backup.
-- **Tip jars** (`/tip` → `/t/<handle>#…`): profile, suggested amounts, custom amount and a private message that goes in the encrypted memo.
+- **Payment links** (`/new` → `/i/<id>#…`): your shielded address, what it's for, memo, and an **optional** amount in ZEC.
+  - With an amount, it works like an invoice (USD estimate, optional due date).
+  - Without one, the payer picks the amount (in ZEC or USD) and can add a private message that goes in the encrypted memo.
+  The payer gets a big QR code (ZIP-321), a "Simple QR (address only)" switch for wallets that can't read the full code,
+  an "Open in wallet" button, copy buttons and the raw URI as backup.
+- Old tip jar links (`/t/<handle>#…`) still work and open as open-amount links. `/tip` redirects to `/new`.
 - **Direct payments (default)**: money goes straight to the address in the link. There's no viewing key, so the page can't
   see the chain. It honestly says "waiting for payment, check your wallet", and the payer can tap "I've sent it", which is only a
   local note, never a confirmation.
@@ -39,19 +42,19 @@ or [Zodl, formerly Zashi](https://zodl.com/download/)).
 | Payer data | Not collected. No accounts, cookies, analytics, trackers or third-party fonts/scripts. |
 | Keys | ZecLink never handles spending keys or seeds. |
 | Your CipherPay API key (optional) | Sent once from your browser to `POST /api/invoices`, used for that single request to CipherPay, then dropped. Never stored, logged, returned, put in the link or kept in localStorage. |
-| What CipherPay sees (only if you use your key) | The invoice amount, the generic name "ZecLink invoice", and (via your viewing key) the payment that comes in. Never the label, memo, name or due date via its API. A fresh one-time address per invoice, so payments can't be linked on-chain. |
-| Memos & tip messages | Built **in the browser** into the ZIP-321 URI, base64url, max 512 bytes. In live mode the memo is `CP-XXXXXXXX` (CipherPay's reference code) + newline + your text, and only CipherPay's `memo` for payment 0 is replaced; address, amount and any extra outputs stay byte-for-byte. CipherPay matches payments by the unique per-invoice address, and the memo code is only a legacy fallback (see `src/invoices/matching.rs` in [cipherpay-api](https://github.com/atmospherelabs-dev/cipherpay-api)). **Caveat:** CipherPay holds the viewing key, so it could technically decrypt memos while scanning. Self-host CipherPay to remove that trust. |
+| What CipherPay sees (only if you use your key) | The amount, the generic name "ZecLink payment", and (via your viewing key) the payment that comes in. Never the label, memo, name or due date via its API. A fresh one-time address per invoice, so payments can't be linked on-chain. |
+| Memos & payer messages | Built **in the browser** into the ZIP-321 URI, base64url, max 512 bytes. In live mode the memo is `CP-XXXXXXXX` (CipherPay's reference code) + newline + your text, and only CipherPay's `memo` for payment 0 is replaced; address, amount and any extra outputs stay byte-for-byte. CipherPay matches payments by the unique per-invoice address, and the memo code is only a legacy fallback (see `src/invoices/matching.rs` in [cipherpay-api](https://github.com/atmospherelabs-dev/cipherpay-api)). **Caveat:** CipherPay holds the viewing key, so it could technically decrypt memos while scanning. Self-host CipherPay to remove that trust. |
 | Browser → third parties | **Nothing.** A strict CSP (`connect-src 'self'`) enforces it. Status and price lookups go through ZecLink's own `/api/*`. QR codes are drawn locally. |
 
 Other hardening: `Referrer-Policy: no-referrer`, `X-Frame-Options: DENY`, restrictive `Permissions-Policy`, `noindex`, no `X-Powered-By`.
 
-Honest limits: anyone holding the link can read the invoice (like an invoice PDF); the host sees page paths and IPs (paths only hold a random id or the CipherPay invoice id); the payer trusts the link sender to give the right address; direct payments can't be tracked by the page.
+Honest limits: anyone holding the link can read the payment details (like an invoice PDF); the host sees page paths and IPs (paths only hold a random id or the CipherPay invoice id); the payer trusts the link sender to give the right address; direct payments can't be tracked by the page.
 
 ## Real vs mocked
 
 | Part | Status |
 | --- | --- |
-| Address validation, ZIP-321 URI + QR, memo encoding, tip jar | **Real** |
+| Address validation, ZIP-321 URI + QR, memo encoding, fixed and open amounts | **Real** |
 | Direct payment to your address | **Real** payment request. No tracking: the page never claims a payment arrived. |
 | Live tracking with your own CipherPay key | **Real**. CipherPay scans mempool + blocks with your viewing key. ZecLink polls CipherPay's public, key-free `GET /api/invoices/{id}/status` through its own server. |
 | USD estimate | **Real**, CipherPay public `/api/rates`, fetched server-side |
@@ -59,10 +62,11 @@ Honest limits: anyone holding the link can read the invoice (like an invoice PDF
 ### CipherPay limits we found (checked with real testnet calls)
 
 - Invoice status by id is public (`GET /api/invoices/{id}/status` needs no key), so a live invoice link only needs the invoice id, never the key.
-- Tip jars can't use the owner's own key: every tip needs a fresh invoice, and CipherPay's key-free donation checkout
+- Open-amount links can't use the creator's own key: every payment needs a fresh invoice, and CipherPay's key-free donation checkout
   (`POST /api/payment-links/{slug}/checkout`) answers `403 Invalid or missing checkout key` for third parties. Keeping
-  people's keys would fix it, and we won't. So tip jars are direct payments.
-- The one exception is the site owner's own tip jar: if `ZECLINK_OWNER_HANDLE` and `CIPHERPAY_API_KEY` are set, `/t/<that handle>`
+  people's keys would fix it, and we won't. So open-amount links are direct payments, and live tracking with your
+  own key needs a fixed amount.
+- The one exception is the site owner's own open-amount link (old tip jar): if `ZECLINK_OWNER_HANDLE` and `CIPHERPAY_API_KEY` are set, `/t/<that handle>`
   gets live tracking into the owner's own CipherPay wallet. The server key is never used for anyone else.
 
 ## Run locally
@@ -80,8 +84,8 @@ npm run build && npm start
 | --- | --- | --- |
 | `NEXT_PUBLIC_ZEC_NETWORK` | `testnet` | `testnet` or `mainnet`; addresses from the other network are rejected |
 | `CIPHERPAY_API_URL` | `https://api.testnet.cipherpay.app` (testnet) / `https://api.cipherpay.app` (mainnet) | Override, e.g. for a self-hosted CipherPay |
-| `CIPHERPAY_API_KEY` | none | Optional. The site owner's own key, used **only** for the owner's tip jar. Server-only. |
-| `ZECLINK_OWNER_HANDLE` | none | Optional. Tip jar handle that gets live tracking with `CIPHERPAY_API_KEY`. |
+| `CIPHERPAY_API_KEY` | none | Optional. The site owner's own key, used **only** for the owner's own link. Server-only. |
+| `ZECLINK_OWNER_HANDLE` | none | Optional. Handle of the owner's link (`/t/<handle>`) that gets live tracking with `CIPHERPAY_API_KEY`. |
 
 ## Stack
 
@@ -90,9 +94,9 @@ Next.js (App Router) · TypeScript · Tailwind CSS · [`qrcode`](https://www.npm
 ## Architecture
 
 ```
-app/new, app/tip           create links (client-side; payload → URL fragment)
-app/i/[id], app/t/[handle] payment pages (decode fragment, QR, status, receipt)
-app/api/invoices           POST → CipherPay create invoice (the user's own key, or the owner tip jar)
+app/new                    create payment links (client-side; payload → URL fragment); /tip redirects here
+app/i/[id], app/t/[handle] payer page, fixed or open amount (components/PayView.tsx)
+app/api/invoices           POST → CipherPay create invoice (the user's own key, or the owner's own link)
 app/api/status/[id]        GET  → CipherPay public status (proxied, no key)
 app/api/rates              GET  → CipherPay public rates (proxied, cached)
 lib/zcash.ts               bech32/bech32m validation, ZIP-321 builder, memo helpers
