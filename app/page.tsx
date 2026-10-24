@@ -11,6 +11,9 @@ export default function Home() {
   return (
     <div className="space-y-14">
       <section className="pt-6 text-center">
+        <p className="mx-auto mb-4 inline-block rounded-full border border-zec/30 bg-zec/10 px-3 py-1 text-xs text-zec">
+          Private payments on Zcash
+        </p>
         <h1 className="text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
           Payment links for <span className="text-zec">shielded ZEC</span>.
         </h1>
