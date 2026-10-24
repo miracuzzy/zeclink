@@ -34,7 +34,7 @@ export default function Privacy() {
         <h2 className="text-lg font-semibold text-zinc-100">On-chain</h2>
         <p>
           ZecLink only accepts <b>shielded</b> addresses (Unified <span className="font-mono">u1…</span> or Sapling{" "}
-          <span className="font-mono">zs1…</span>, or their testnet forms). Transparent <span className="font-mono">t…</span>, TEX
+          <span className="font-mono">zs1…</span>{process.env.NEXT_PUBLIC_ZEC_NETWORK === "mainnet" ? "" : ", or their testnet forms"}). Transparent <span className="font-mono">t…</span>, TEX
           and old Sprout addresses are rejected because they leak. A shielded payment hides the sender, receiver, amount and memo
           from everyone except the people involved.
         </p>
