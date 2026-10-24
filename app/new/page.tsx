@@ -1,0 +1,228 @@
+"use client";
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import ModeBanner from "@/components/ModeBanner";
+import CopyButton from "@/components/CopyButton";
+import Qr from "@/components/Qr";
+import { fmtFiat, useConfig, useRates } from "@/lib/client";
+import { checkAddress, MAX_MEMO_BYTES, normaliseZec, utf8ByteLength } from "@/lib/zcash";
+import { encodePayload, randomId, type InvoicePayload } from "@/lib/payload";
+
+export default function NewInvoice() {
+  const cfg = useConfig();
+  const rates = useRates();
+  const [name, setName] = useState("");
+  const [address, setAddress] = useState("");
+  const [amount, setAmount] = useState("");
+  const [label, setLabel] = useState("");
+  const [memo, setMemo] = useState("");
+  const [due, setDue] = useState("");
+  const [touched, setTouched] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [link, setLink] = useState<string | null>(null);
+
+  const usesProvider = cfg?.provider === "cipherpay";
+  const addr = useMemo(() => checkAddress(address), [address]);
+  const netMismatch = addr.ok && cfg && addr.network !== cfg.network;
+  const zec = normaliseZec(amount);
+  const memoBytes = utf8ByteLength(memo);
+  const usd = zec ? fmtFiat(Number(zec), rates?.usd, "USD") : null;
+
+  const valid = !!zec && memoBytes <= MAX_MEMO_BYTES && (usesProvider || (addr.ok && !netMismatch));
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setTouched(true);
+    setErr(null);
+    if (!valid || !cfg) return;
+    setBusy(true);
+    try {
+      let payload: InvoicePayload;
+      if (usesProvider) {
+        const res = await fetch("/api/invoices", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ kind: "invoice", amountZec: zec }),
+        });
+        const j = await res.json();
+        if (!res.ok) throw new Error(j.error || "Could not create invoice");
+        payload = {
+          v: 1,
+          k: "inv",
+          p: "cipherpay",
+          id: j.invoice_id,
+          z: String(j.price_zec),
+          u: j.zcash_uri,
+          pa: j.payment_address,
+          e: j.expires_at,
+          mc: j.memo_code,
+          f: j.fiat,
+          l: label.trim() || undefined,
+          m: memo.trim() || undefined,
+          n: name.trim() || undefined,
+          d: due || undefined,
+          c: Date.now(),
+        };
+      } else {
+        payload = {
+          v: 1,
+          k: "inv",
+          p: "demo",
+          id: randomId(),
+          a: address.trim(),
+          z: zec!,
+          l: label.trim() || undefined,
+          m: memo.trim() || undefined,
+          n: name.trim() || undefined,
+          d: due || undefined,
+          c: Date.now(),
+        };
+      }
+      setLink(`${window.location.origin}/i/${payload.id}#${encodePayload(payload)}`);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Something went wrong");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (link) {
+    return (
+      <div className="mx-auto max-w-md space-y-5">
+        <h1 className="text-2xl font-bold">Your invoice link is ready</h1>
+        <ModeBanner cfg={cfg} compact />
+        <div className="card space-y-4">
+          <Qr value={link} size={220} label="QR code of the invoice page link" />
+          <code className="block break-all rounded-lg bg-black/40 p-3 text-xs text-zinc-300">{link}</code>
+          <div className="grid grid-cols-2 gap-2">
+            <CopyButton text={link} label="Copy link" />
+            <a className="btn-ghost" href={link}>
+              Open invoice
+            </a>
+          </div>
+          <p className="text-xs text-zinc-500">
+            Everything after the <span className="font-mono">#</span> is the invoice itself. It never reaches our server — keep
+            the link somewhere safe; we can&apos;t recover it for you.
+          </p>
+        </div>
+        <button className="btn-ghost w-full" onClick={() => setLink(null)}>
+          Create another
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={submit} className="mx-auto max-w-md space-y-5">
+      <div>
+        <h1 className="text-2xl font-bold">New invoice</h1>
+        <p className="text-sm text-zinc-400">Get paid in shielded ZEC. Takes 30 seconds.</p>
+      </div>
+      <ModeBanner cfg={cfg} />
+
+      <div>
+        <label className="label" htmlFor="name">
+          Your name or business <span className="text-zinc-600">(optional)</span>
+        </label>
+        <input id="name" className="input" maxLength={60} value={name} onChange={(e) => setName(e.target.value)} placeholder="Ada Designs" />
+      </div>
+
+      {usesProvider ? (
+        <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-zinc-400">
+          Payments go to the shielded wallet linked to this deployment&apos;s CipherPay merchant account. CipherPay derives a
+          fresh one-time Unified Address for every invoice from your viewing key, so payments can&apos;t be linked to each other.
+        </div>
+      ) : (
+        <div>
+          <label className="label" htmlFor="addr">
+            Your shielded receiving address
+          </label>
+          <textarea
+            id="addr"
+            className="input min-h-[84px] font-mono text-xs"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            onBlur={() => setTouched(true)}
+            placeholder={cfg?.network === "mainnet" ? "u1… or zs1…" : "utest1… or ztestsapling1…"}
+            spellCheck={false}
+            autoCapitalize="off"
+            autoCorrect="off"
+          />
+          {address && addr.ok && !netMismatch && (
+            <p className="hint text-emerald-400">
+              ✓ Valid {addr.kind === "unified" ? "Unified" : "Sapling"} address ({addr.network})
+            </p>
+          )}
+          {address && addr.ok && netMismatch && (
+            <p className="hint text-red-400">
+              This is a {addr.network} address but this deployment runs on {cfg?.network}.
+            </p>
+          )}
+          {(touched || address.length > 3) && address && !addr.ok && <p className="hint text-red-400">{addr.error}</p>}
+          {touched && !address && <p className="hint text-red-400">Required.</p>}
+        </div>
+      )}
+
+      <div>
+        <label className="label" htmlFor="amount">
+          Amount (ZEC)
+        </label>
+        <input
+          id="amount"
+          className="input font-mono text-lg"
+          inputMode="decimal"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value.replace(",", "."))}
+          placeholder="0.25"
+        />
+        <p className="hint">
+          {zec && usd ? (
+            <>
+              ≈ {usd}
+              {cfg?.network === "testnet" && " (at mainnet price — testnet ZEC has no value)"}
+            </>
+          ) : amount && !zec ? (
+            <span className="text-red-400">Enter a positive amount with at most 8 decimals.</span>
+          ) : (
+            "Up to 8 decimals."
+          )}
+        </p>
+      </div>
+
+      <div>
+        <label className="label" htmlFor="label">
+          What&apos;s it for?
+        </label>
+        <input id="label" className="input" maxLength={80} value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Logo design — October" />
+      </div>
+
+      <div>
+        <label className="label" htmlFor="memo">
+          Memo <span className="text-zinc-600">(optional, encrypted on-chain)</span>
+        </label>
+        <textarea id="memo" className="input min-h-[70px]" value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="INV-0042" />
+        <p className={`hint ${memoBytes > MAX_MEMO_BYTES ? "text-red-400" : ""}`}>
+          {memoBytes}/{MAX_MEMO_BYTES} bytes
+          {usesProvider && " · shown on the invoice page; CipherPay sets its own payment memo code"}
+        </p>
+      </div>
+
+      <div>
+        <label className="label" htmlFor="due">
+          Due date <span className="text-zinc-600">(optional)</span>
+        </label>
+        <input id="due" type="date" className="input" value={due} onChange={(e) => setDue(e.target.value)} />
+      </div>
+
+      {err && <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-300">{err}</p>}
+
+      <button className="btn-primary w-full" disabled={busy || !cfg}>
+        {busy ? "Creating…" : "Create invoice link"}
+      </button>
+      <p className="text-center text-xs text-zinc-500">
+        Nothing is saved on our server. <Link href="/privacy" className="underline">How?</Link>
+      </p>
+    </form>
+  );
+}

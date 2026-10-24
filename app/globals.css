@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@theme {
+  --color-zec: #f4b728;
+  --color-zec-dim: #c99318;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background:
+    radial-gradient(1200px 500px at 50% -200px, rgba(244, 183, 40, 0.12), transparent 70%),
+    #07070a;
+  color: #e7e7ea;
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-xl bg-zec px-4 py-3 font-semibold text-black transition hover:bg-[#ffc94a] active:scale-[0.99] disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/[0.02] px-3 py-2.5 text-sm text-zinc-200 transition hover:border-zec/60 hover:text-white disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .input {
+    @apply w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-zinc-100 placeholder:text-zinc-600 outline-none transition focus:border-zec/70 focus:ring-2 focus:ring-zec/20;
+  }
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-zinc-300;
+  }
+  .hint {
+    @apply mt-1 text-xs text-zinc-500;
+  }
+  .pill {
+    @apply rounded-full border px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider;
+  }
+}
+
+@media print {
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  header,
+  footer,
+  .no-print {
+    display: none !important;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+    color: #000 !important;
+  }
+  .print-area {
+    position: absolute;
+    inset: 0;
+    border: none !important;
+    background: #fff !important;
+  }
+}
