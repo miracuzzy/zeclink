@@ -28,7 +28,7 @@ or [Zodl, formerly Zashi](https://zodl.com/download/)).
   local note, never a confirmation.
 - **Optional live tracking**: if you have your own [CipherPay](https://www.cipherpay.app) account, paste its API key on `/new`.
   The page then shows awaiting → detected (mempool, about 5 to 10 s) → confirmed (1 block, about 75 s) and gives a receipt.
-- **Shielded only**: Unified (`u1…`/`utest1…`, bech32m) and Sapling (`zs1…`/`ztestsapling1…`, bech32) with full checksum checks.
+- **Shielded only**: Unified (`u1…`, bech32m) and Sapling (`zs1…`, bech32) with full checksum checks.
   Transparent `t1/t3/tm`, TEX and Sprout addresses are rejected, and so are addresses from the wrong network.
 - **Remember my address** (optional): saved in your browser's localStorage only, with a "forget it" button. Keys are never saved.
 - **`/privacy`** says exactly what is and isn't stored or seen, and by whom.
@@ -59,14 +59,14 @@ Honest limits: anyone holding the link can read the payment details (like an inv
 | Live tracking with your own CipherPay key | **Real**. CipherPay scans mempool + blocks with your viewing key. ZecLink polls CipherPay's public, key-free `GET /api/invoices/{id}/status` through its own server. |
 | USD estimate | **Real**, CipherPay public `/api/rates`, fetched server-side |
 
-### CipherPay limits we found (checked with real testnet calls)
+### CipherPay limits we found (checked with real API calls)
 
 - Invoice status by id is public (`GET /api/invoices/{id}/status` needs no key), so a live invoice link only needs the invoice id, never the key.
 - Open-amount links can't use the creator's own key: every payment needs a fresh invoice, and CipherPay's key-free donation checkout
   (`POST /api/payment-links/{slug}/checkout`) answers `403 Invalid or missing checkout key` for third parties. Keeping
   people's keys would fix it, and we won't. So open-amount links are direct payments, and live tracking with your
   own key needs a fixed amount.
-- The one exception is the site owner's own open-amount link (old tip jar): if `ZECLINK_OWNER_HANDLE` and the owner key for this network are set, `/t/<that handle>`
+- The one exception is the site owner's own open-amount link (old tip jar): if `ZECLINK_OWNER_HANDLE` and the owner key are set, `/t/<that handle>`
   gets live tracking into the owner's own CipherPay wallet. The server key is never used for anyone else.
 
 ## Run locally
@@ -82,18 +82,12 @@ npm run build && npm start
 
 | Var | Default | Purpose |
 | --- | --- | --- |
-| `NEXT_PUBLIC_ZEC_NETWORK` | `testnet` | `testnet` or `mainnet`; addresses from the other network are rejected |
-| `CIPHERPAY_API_URL` | `https://api.testnet.cipherpay.app` (testnet) / `https://api.cipherpay.app` (mainnet) | Override, e.g. for a self-hosted CipherPay |
-| `CIPHERPAY_API_KEY_MAINNET` | none | Optional. The site owner's own **mainnet** CipherPay key, used **only** for the owner's own link. Server-only. The only key read on mainnet. |
-| `CIPHERPAY_API_KEY_TESTNET` | none | Same, for testnet. `CIPHERPAY_API_KEY` still works on testnet (older setups) and is ignored on mainnet. |
-| `ZECLINK_OWNER_HANDLE` | none | Optional. Handle of the site owner's own open-amount link (`/t/<handle>`). Needs a key or an owner address for this network. |
-| `ZECLINK_OWNER_ADDRESS` | none | Optional. The owner's own shielded address on this network. The owner's link pays it directly when there's no key, or if CipherPay is down. |
+| `CIPHERPAY_API_KEY_MAINNET` | none | Optional. The site owner's own CipherPay key, used **only** for the owner's own link. Server-only. |
+| `ZECLINK_OWNER_HANDLE` | none | Optional. Handle of the site owner's own open-amount link (`/t/<handle>`). Needs a key or an owner address. |
+| `ZECLINK_OWNER_ADDRESS` | none | Optional. The owner's own shielded address. The owner's link pays it directly when there's no key, or if CipherPay is down. |
+| `CIPHERPAY_API_URL` | `https://api.cipherpay.app` | Override, e.g. for a self-hosted CipherPay |
 
-### Switching to mainnet
-
-Set `NEXT_PUBLIC_ZEC_NETWORK=mainnet`, add `CIPHERPAY_API_KEY_MAINNET` (from a mainnet CipherPay account, see below) and/or
-`ZECLINK_OWNER_ADDRESS=u1…`, then redeploy (the network is baked in at build time). Old testnet links still open and show a
-"this link is for testnet" notice. Mainnet CipherPay account: sign up at https://www.cipherpay.app/dashboard/register with a
+ZecLink runs on Zcash mainnet. To get a CipherPay account, sign up at https://www.cipherpay.app/dashboard/register with a
 viewing key (`uview1…` or `uivk1…`) from a wallet you use only for this, and save the API key it shows once.
 
 ## Stack

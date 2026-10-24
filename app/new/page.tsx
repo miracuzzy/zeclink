@@ -122,7 +122,7 @@ export default function NewPaymentLink() {
     return (
       <div className="mx-auto max-w-md space-y-5">
         <h1 className="text-2xl font-bold">Your payment link is ready</h1>
-        <ModeBanner live={linkLive} network={cfg?.network ?? "testnet"} compact />
+        <ModeBanner live={linkLive} network={cfg?.network ?? "mainnet"} compact />
         <div className="card space-y-4">
           <Qr value={link} size={220} label="QR code of the payment link" />
           <code className="block break-all rounded-lg bg-black/40 p-3 text-xs text-zinc-300">{link}</code>

@@ -5,7 +5,7 @@ export const CIPHERPAY_DEFAULT_TESTNET = "https://api.testnet.cipherpay.app";
 export const CIPHERPAY_DEFAULT_MAINNET = "https://api.cipherpay.app";
 
 export function zecNetwork(): "testnet" | "mainnet" {
-  return process.env.NEXT_PUBLIC_ZEC_NETWORK === "mainnet" ? "mainnet" : "testnet";
+  return process.env.NEXT_PUBLIC_ZEC_NETWORK === "testnet" ? "testnet" : "mainnet";
 }
 
 export function cipherpayBase(): string {
