@@ -1,5 +1,1 @@
-export const metadata = { title: "Tip jar | ZecLink" };
-
-export default function L({ children }: { children: React.ReactNode }) {
-  return children;
-}
+export const metadata = { title: "Payment request | ZecLink" };
