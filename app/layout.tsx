@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     siteName: "ZecLink",
     images: [{ url: `${SITE}/og-card.png`, width: 1200, height: 630, alt: "ZecLink: private payment links for shielded ZEC" }],
   },
-  twitter: { card: "summary_large_image", title: "ZecLink", description: OG_DESC, images: [`${SITE}/og-card.png`] },
+  twitter: { card: "summary_large_image", site: "@zeclinkapp", creator: "@zeclinkapp", title: "ZecLink", description: OG_DESC, images: [`${SITE}/og-card.png`] },
   referrer: "no-referrer",
   robots: { index: false, follow: false },
 };
@@ -66,7 +66,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           No analytics · no trackers · no cookies · shielded addresses only ·{" "}
           <Link href="/privacy" className="underline hover:text-zinc-300">
             what we store (almost nothing)
-          </Link>
+          </Link> ·{" "}
+          <a
+            href="https://x.com/zeclinkapp"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="ZecLink on X (@zeclinkapp), opens in a new tab"
+            className="underline hover:text-zinc-300"
+          >
+            @zeclinkapp on X
+          </a>
         </footer>
       </body>
     </html>

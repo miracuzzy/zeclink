@@ -13,6 +13,8 @@ Made for anyone who gets paid, for example:
 ZecLink never creates or holds wallets, accounts or funds. You bring your own wallet (for example [Zingo](https://zingolabs.org)
 or [Zodl, formerly Zashi](https://zodl.com/download/)).
 
+**Links:** live app [zeclink.vercel.app](https://zeclink.vercel.app) · X [@zeclinkapp](https://x.com/zeclinkapp)
+
 ## What it does
 
 - **Invoices** (`/new` → `/i/<id>#…`): your shielded address, amount in ZEC (with a USD estimate), what it's for, memo, due date.
