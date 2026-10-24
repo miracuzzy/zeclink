@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import ModeBanner from "@/components/ModeBanner";
+import NetworkNotice from "@/components/NetworkNotice";
 import PaymentPanel from "@/components/PaymentPanel";
 import { fmtFiat, useRates } from "@/lib/client";
 import type { PublicConfig } from "@/lib/types";
@@ -96,6 +97,7 @@ function Fixed({ link, cfg }: { link: PayLink; cfg: PublicConfig }) {
   return (
     <>
       <ModeBanner live={isLive} network={addrCheck.network!} compact />
+      <NetworkNotice linkNetwork={addrCheck.network!} siteNetwork={cfg.network} />
       <PaymentPanel
         uri={uri}
         address={address}
@@ -128,11 +130,17 @@ function Open({ link, cfg }: { link: PayLink; cfg: PublicConfig }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [pending, setPending] = useState<Pending | null>(null);
+  const [liveFailed, setLiveFailed] = useState(false);
 
   // Live only for this site owner's own link (server key). Everyone else's open links pay straight to their address.
-  const live = link.provider === "owner" && !!cfg.ownerHandle && cfg.ownerHandle === link.handle;
-  if (link.provider === "owner" && !live) return <Problem>This link doesn&apos;t work on this site. Ask whoever shared it for a fresh one.</Problem>;
-  const addrCheck = checkAddress(link.address ?? "");
+  // The owner's link pays the owner's own address (ZECLINK_OWNER_ADDRESS) directly when there's no key for this
+  // network, or if CipherPay errors.
+  const ownerLink = link.provider === "owner" && !!cfg.ownerHandle && cfg.ownerHandle === link.handle;
+  if (link.provider === "owner" && !ownerLink) return <Problem>This link doesn&apos;t work on this site. Ask whoever shared it for a fresh one.</Problem>;
+  const live = ownerLink && cfg.ownerLive && !liveFailed;
+  const payTo = ownerLink ? cfg.ownerAddress ?? "" : link.address ?? "";
+  if (ownerLink && !live && !payTo) return <Problem>This link isn&apos;t set up on this site right now. Try again later.</Problem>;
+  const addrCheck = checkAddress(payTo);
   if (!live && !addrCheck.ok) return <Problem>This link&apos;s receiving address is not a valid shielded address. Do not pay it.</Problem>;
 
   // The payer can type ZEC or USD; the QR always asks for ZEC.
@@ -153,8 +161,8 @@ function Open({ link, cfg }: { link: PayLink; cfg: PublicConfig }) {
     !live && zec && !tooLong
       ? {
           id: link.id,
-          uri: buildZip321({ address: link.address!, amount: zec, memo: text, label: link.label || (link.name ? `Pay ${link.name}` : link.handle ? `Pay @${link.handle}` : undefined) }),
-          address: link.address!,
+          uri: buildZip321({ address: payTo, amount: zec, memo: text, label: link.label || (link.name ? `Pay ${link.name}` : link.handle ? `Pay @${link.handle}` : undefined) }),
+          address: payTo,
           amount: zec,
           memo: text,
           message: text,
@@ -182,7 +190,11 @@ function Open({ link, cfg }: { link: PayLink; cfg: PublicConfig }) {
       if (!built) throw new Error("Message is too long for a Zcash memo");
       setPending({ id: j.invoice_id, uri: built.uri, address: j.payment_address, amount: built.amount ?? amount, memo: built.memo, message: text, createdAt: Date.now() });
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Something went wrong");
+      if (ownerLink && cfg.ownerAddress && checkAddress(cfg.ownerAddress).ok) {
+        // Live tracking is down: let the payer pay the owner directly instead.
+        setLiveFailed(true);
+        setErr("Live tracking is down right now, so this payment goes straight to the wallet instead.");
+      } else setErr(e instanceof Error ? e.message : "Something went wrong");
     } finally {
       setBusy(false);
     }
@@ -191,6 +203,7 @@ function Open({ link, cfg }: { link: PayLink; cfg: PublicConfig }) {
   return (
     <>
       <ModeBanner live={live} network={live ? cfg.network : addrCheck.network!} compact />
+      {!live && <NetworkNotice linkNetwork={addrCheck.network!} siteNetwork={cfg.network} />}
       {!(live && pending) && (
         <div className="card space-y-4">
           <p className="text-sm font-medium text-zinc-300">How much do you want to pay?</p>
