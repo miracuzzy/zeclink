@@ -9,7 +9,7 @@ export function useConfig(): PublicConfig | null {
     fetch("/api/config", { cache: "no-store" })
       .then((r) => r.json())
       .then((j) => alive && setCfg(j))
-      .catch(() => alive && setCfg({ network: "testnet", ownerHandle: null, payeeName: null }));
+      .catch(() => alive && setCfg({ network: "testnet", ownerHandle: null, ownerLive: false, ownerAddress: null, payeeName: null }));
     return () => {
       alive = false;
     };
