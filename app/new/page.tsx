@@ -147,6 +147,7 @@ export default function NewInvoice() {
       <div>
         <h1 className="text-2xl font-bold">New invoice</h1>
         <p className="text-sm text-zinc-400">Get paid in shielded ZEC. Takes 30 seconds.</p>
+        <p className="mt-1 text-sm text-zinc-500">All you need is your address and an amount. No account, no sign up.</p>
       </div>
 
       <div>
@@ -265,30 +266,45 @@ export default function NewInvoice() {
         <input id="due" type="date" className="input" value={due} onChange={(e) => setDue(e.target.value)} />
       </div>
 
-      <div className="rounded-xl border border-white/10 p-3 text-sm">
-        <label className="flex items-center gap-2 text-zinc-300">
+      <details className="rounded-xl border border-white/10 p-3 text-sm" data-testid="advanced">
+        <summary className="cursor-pointer select-none text-zinc-400">Advanced</summary>
+        <p className="hint mt-2">
+          Not needed. Turn this on if you want the invoice to show paid by itself.
+        </p>
+        <label className="mt-3 flex items-center gap-2 text-zinc-300">
           <input type="checkbox" checked={showKey} onChange={(e) => setShowKey(e.target.checked)} />
-          Live tracking via CipherPay <span className="text-zinc-600">(optional)</span>
+          Live tracking
         </label>
         {showKey && (
           <div className="mt-3 space-y-2">
+            <label className="label flex items-center justify-between" htmlFor="cpkey">
+              <span>Your CipherPay API key</span>
+              <a
+                href={cfg?.network === "mainnet" ? "https://cipherpay.app" : "https://testnet.cipherpay.app"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-normal text-zinc-400 underline"
+              >
+                get one
+              </a>
+            </label>
             <input
+              id="cpkey"
               className="input font-mono text-xs"
               type="password"
               autoComplete="off"
               spellCheck={false}
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              placeholder="cpay_sk_… (your own testnet key)"
+              placeholder={cfg?.network === "mainnet" ? "cpay_sk_…" : "cpay_sk_… (testnet key)"}
             />
             <p className="hint">
-              Got your own CipherPay account? Paste its API key and the invoice page will show when the payment lands. We use the key
-              once to make this invoice and then drop it. It&apos;s never saved or put in the link.{" "}
+              The invoice page will show when the payment lands. We use the key once to make this invoice and then drop it. It&apos;s never saved or put in the link.{" "}
               <Link href="/privacy" className="underline">More</Link>
             </p>
           </div>
         )}
-      </div>
+      </details>
 
       {err && <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-300">{err}</p>}
 
