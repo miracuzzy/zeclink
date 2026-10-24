@@ -12,6 +12,8 @@ export interface PublicConfig {
   network: "testnet" | "mainnet";
   /** Handle of the deployment owner's tip jar that gets live tracking with the server key, if any. */
   ownerHandle: string | null;
+  ownerLive: boolean;
+  ownerAddress: string | null;
   payeeName: string | null;
 }
 

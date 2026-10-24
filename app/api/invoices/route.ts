@@ -1,4 +1,4 @@
-import { cipherpayBase, isCipherpayKey, ownerHandle } from "@/lib/server-config";
+import { cipherpayBase, isCipherpayKey, ownerHandle, ownerKey, zecNetwork } from "@/lib/server-config";
 import { getRates } from "@/lib/rates";
 import { normaliseZec } from "@/lib/zcash";
 
@@ -31,10 +31,11 @@ export async function POST(req: Request) {
     key = body.apiKey.trim();
   } else {
     const owner = ownerHandle();
-    if (!owner || String(body.handle ?? "").toLowerCase() !== owner) {
+    const k = ownerKey();
+    if (!owner || !k || String(body.handle ?? "").toLowerCase() !== owner) {
       return Response.json({ error: "Live tracking isn't set up for this link." }, { status: 409 });
     }
-    key = process.env.CIPHERPAY_API_KEY!.trim();
+    key = k;
   }
 
   let amount: number;
@@ -63,7 +64,7 @@ export async function POST(req: Request) {
     });
     const j = await res.json().catch(() => ({}));
     if (res.status === 401 || res.status === 403) {
-      return Response.json({ error: "CipherPay didn't accept that API key. Check it's a testnet key from your own CipherPay account." }, { status: 401 });
+      return Response.json({ error: `CipherPay didn't accept that API key. Check it's a ${zecNetwork() === "testnet" ? "testnet key" : "key"} from your own CipherPay account.` }, { status: 401 });
     }
     if (!res.ok) {
       return Response.json({ error: `CipherPay error (${res.status})${j?.error ? ": " + String(j.error).slice(0, 200) : ""}` }, { status: 502 });
