@@ -89,26 +89,26 @@ export default function NewTipJar() {
     <form onSubmit={submit} className="mx-auto max-w-md space-y-5">
       <div>
         <h1 className="text-2xl font-bold">Tip jar</h1>
-        <p className="text-sm text-zinc-400">One link for fans to tip you in shielded ZEC.</p>
+        <p className="text-sm text-zinc-400">One link anyone can use to tip or support you in shielded ZEC.</p>
       </div>
       <div>
         <label className="label" htmlFor="h">
           Handle
         </label>
-        <input id="h" className="input" value={handle} onChange={(e) => setHandle(e.target.value)} placeholder="@adaart" />
+        <input id="h" className="input" value={handle} onChange={(e) => setHandle(e.target.value)} placeholder="@yourname" />
         {handle && !handleOk && <p className="hint text-red-400">2 to 30 letters, numbers, _ or -</p>}
       </div>
       <div>
         <label className="label" htmlFor="n">
           Display name
         </label>
-        <input id="n" className="input" maxLength={60} value={name} onChange={(e) => setName(e.target.value)} placeholder="Ada Okafor" />
+        <input id="n" className="input" maxLength={60} value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name, shop or group" />
       </div>
       <div>
         <label className="label" htmlFor="b">
           A line for your supporters
         </label>
-        <input id="b" className="input" maxLength={140} value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Illustrator and coffee addict. Thanks for the love 💛" />
+        <input id="b" className="input" maxLength={140} value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Thanks for supporting what I do 💛" />
       </div>
       {usesProvider ? (
         <div className="space-y-2">

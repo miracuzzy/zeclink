@@ -1,11 +1,38 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import Logo from "@/components/Logo";
+import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
+const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-inter", display: "swap" });
+const grotesk = Space_Grotesk({ subsets: ["latin"], weight: ["600", "700"], variable: "--font-grotesk", display: "swap" });
+const mono = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "500", "700"], variable: "--font-jbmono", display: "swap" });
+
+const SITE = "https://zeclink.vercel.app";
+const OG_DESC = "Private payment links for shielded ZEC. The payment request lives in the link.";
+
 export const metadata: Metadata = {
-  title: "ZecLink: private payment links for shielded ZEC",
-  description: "Stripe-style invoice and tip links for shielded Zcash. Get paid without exposing your income.",
+  metadataBase: new URL(SITE),
+  title: "ZecLink: private payment links for anyone who gets paid in ZEC",
+  description:
+    "Invoice and tip links for shielded Zcash. For creators, shops, freelancers, communities and anyone else who gets paid. No account needed.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
+  manifest: "/site.webmanifest",
+  openGraph: {
+    type: "website",
+    title: "ZecLink",
+    description: OG_DESC,
+    url: SITE,
+    siteName: "ZecLink",
+    images: [{ url: `${SITE}/og-card.png`, width: 1200, height: 630, alt: "ZecLink: private payment links for shielded ZEC" }],
+  },
+  twitter: { card: "summary_large_image", title: "ZecLink", description: OG_DESC, images: [`${SITE}/og-card.png`] },
   referrer: "no-referrer",
   robots: { index: false, follow: false },
 };
@@ -14,7 +41,7 @@ export const viewport: Viewport = { themeColor: "#07070a", width: "device-width"
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="h-full antialiased">
+    <html lang="en" className={`h-full antialiased ${inter.variable} ${grotesk.variable} ${mono.variable}`}>
       <body className="flex min-h-full flex-col">
         <header className="sticky top-0 z-10 border-b border-white/5 bg-[#07070a]/80 backdrop-blur">
           <nav className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">

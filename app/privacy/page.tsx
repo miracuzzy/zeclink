@@ -7,7 +7,7 @@ const rows: [string, string, string][] = [
   ["Payer identity, IP, wallet", "Not collected", "No accounts, no cookies, no analytics, no fingerprinting. The payer's wallet talks to the Zcash network, not to us."],
   ["Spending keys and seed phrases", "Never", "ZecLink never asks for them."],
   ["Remembered address", "Your browser only", "If you tick \"remember my address on this device\", your address is saved in this browser's local storage so it's filled in next time. It's never sent to us. \"Forget it\" deletes it. API keys are never remembered."],
-  ["Third-party requests from your browser", "None", "A strict Content-Security-Policy only allows this site. Fonts are system fonts and QR codes are drawn on your device."],
+  ["Third-party requests from your browser", "None", "A strict Content-Security-Policy only allows this site. Fonts and icons are served from this site and QR codes are drawn on your device."],
 ];
 
 export default function Privacy() {
@@ -15,7 +15,7 @@ export default function Privacy() {
     <article className="mx-auto max-w-2xl space-y-8">
       <header>
         <h1 className="text-3xl font-bold">What ZecLink stores and leaks</h1>
-        <p className="mt-2 text-zinc-400">Short version: almost nothing, and here&apos;s exactly what.</p>
+        <p className="mt-2 text-zinc-400">Short version: almost nothing, and here&apos;s exactly what. Same for everyone, whether you sell, stream, freelance or run a group.</p>
       </header>
 
       <section className="space-y-3">

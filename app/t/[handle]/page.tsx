@@ -37,7 +37,7 @@ export default function TipPage() {
     return (
       <div className="card mx-auto max-w-md text-center">
         <h1 className="text-xl font-semibold">Tip jar not found</h1>
-        <p className="mt-2 text-sm text-zinc-400">This link is incomplete. Ask the creator for their full ZecLink.</p>
+        <p className="mt-2 text-sm text-zinc-400">This link is incomplete. Ask whoever shared it for the full link.</p>
         <Link href="/tip" className="btn-primary mt-4">
           Make your own
         </Link>
@@ -48,7 +48,7 @@ export default function TipPage() {
   // else's tips go straight to the address in the link.
   const live = tip.p === "owner" && !!cfg.ownerHandle && cfg.ownerHandle === tip.h;
   if ((tip.p === "owner" || tip.p === "cipherpay") && !live) {
-    return <div className="card mx-auto max-w-md text-red-300">This tip jar link doesn&apos;t work on this site. Ask the creator for a fresh one.</div>;
+    return <div className="card mx-auto max-w-md text-red-300">This tip jar link doesn&apos;t work on this site. Ask whoever shared it for a fresh one.</div>;
   }
   const addrCheck = checkAddress(tip.a ?? "");
   if (!live && !addrCheck.ok) {

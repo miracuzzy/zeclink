@@ -28,7 +28,7 @@ export default function NewInvoice() {
   const [showKey, setShowKey] = useState(false);
   const [apiKey, setApiKey] = useState("");
 
-  // Prefill the creator's own address if they asked this browser to remember it.
+  // Prefill the user's own address if they asked this browser to remember it.
   // (Read after mount, so the server-rendered HTML and first client render match.)
   useEffect(() => {
     const t = setTimeout(() => {
@@ -146,7 +146,7 @@ export default function NewInvoice() {
     <form onSubmit={submit} className="mx-auto max-w-md space-y-5">
       <div>
         <h1 className="text-2xl font-bold">New invoice</h1>
-        <p className="text-sm text-zinc-400">Get paid in shielded ZEC. Takes 30 seconds.</p>
+        <p className="text-sm text-zinc-400">Ask anyone for a payment in shielded ZEC. Takes 30 seconds.</p>
         <p className="mt-1 text-sm text-zinc-500">All you need is your address and an amount. No account, no sign up.</p>
       </div>
 
@@ -154,7 +154,7 @@ export default function NewInvoice() {
         <label className="label" htmlFor="name">
           Your name or business <span className="text-zinc-600">(optional)</span>
         </label>
-        <input id="name" className="input" maxLength={60} value={name} onChange={(e) => setName(e.target.value)} placeholder="Ada Designs" />
+        <input id="name" className="input" maxLength={60} value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name, shop or group" />
       </div>
 
       {usesProvider ? (
@@ -245,7 +245,7 @@ export default function NewInvoice() {
         <label className="label" htmlFor="label">
           What&apos;s it for?
         </label>
-        <input id="label" className="input" maxLength={80} value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Logo design, October" />
+        <input id="label" className="input" maxLength={80} value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Order #12, event ticket, logo design…" />
       </div>
 
       <div>

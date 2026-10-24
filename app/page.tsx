@@ -1,5 +1,12 @@
 import Link from "next/link";
 
+const who = [
+  { t: "Creators", d: "A tip jar for your bio or stream. Fans can add a private message." },
+  { t: "Sellers and small shops", d: "An invoice per order, or one QR on the counter at your stall." },
+  { t: "Freelancers", d: "Send a client an invoice with a due date and a memo." },
+  { t: "Communities and organizers", d: "Collect dues, ticket money or donations without a public list of who paid." },
+];
+
 const points = [
   { t: "Shielded only", d: "ZecLink refuses transparent t-addresses. Amount, sender and receiver stay encrypted on-chain." },
   { t: "No database of you", d: "Invoice details ride in the link's #fragment, which browsers never send to our server." },
@@ -15,11 +22,11 @@ export default function Home() {
           Private payments on Zcash
         </p>
         <h1 className="text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
-          Payment links for <span className="text-zec">shielded ZEC</span>.
+          Private payment links for anyone who gets paid in <span className="text-zec">ZEC</span>.
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-lg text-zinc-400">
-          Send an invoice or a tip jar link. Get paid in private. Nobody gets a map of your income. Not your client, not a block
-          explorer, not us.
+          Make an invoice or a tip jar link in seconds and get paid in shielded ZEC. Nobody gets a map of your money. Not the
+          person paying, not a block explorer, not us.
         </p>
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <Link href="/new" className="btn-primary px-6">
@@ -31,11 +38,23 @@ export default function Home() {
         </div>
       </section>
 
+      <section>
+        <h2 className="mb-4 text-center text-lg font-semibold">Made for anyone who gets paid</h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {who.map((w) => (
+            <div key={w.t} className="card">
+              <h3 className="font-semibold">{w.t}</h3>
+              <p className="mt-1 text-sm text-zinc-400">{w.d}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <section className="card">
         <h2 className="mb-2 text-lg font-semibold">Why it matters</h2>
         <p className="text-zinc-400">
-          A freelancer getting paid by clients on a public chain broadcasts every invoice: who pays them, how much,
-          and when. That&apos;s a target on their back. With shielded Zcash, the payment settles in about a minute, peer to peer,
+          Get paid on a public chain and every payment is out in the open: who paid you, how much, and when. Anyone who
+          looks gets a map of your income, your customers and your supporters. With shielded Zcash, the payment settles in about a minute, peer to peer,
           and the only people who know the amount are the two people involved.
         </p>
       </section>
@@ -56,7 +75,7 @@ export default function Home() {
             <b className="text-zec">1.</b> Enter your shielded address, the amount and what it&apos;s for.
           </li>
           <li>
-            <b className="text-zec">2.</b> Share the link. Your client sees a big QR code and a one-tap &quot;open in wallet&quot; button
+            <b className="text-zec">2.</b> Share the link. Whoever is paying sees a big QR code and a one-tap &quot;open in wallet&quot; button
             (standard ZIP-321).
           </li>
           <li>

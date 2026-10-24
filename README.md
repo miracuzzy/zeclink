@@ -1,7 +1,14 @@
-# ZecLink: payment links for shielded ZEC
+# ZecLink: private payment links for anyone who gets paid in ZEC
 
-**Invoice and tip links for shielded Zcash, for any freelancer or creator.** Paste your own shielded address, share a link,
-get paid in private. Nobody gets a map of your income. Not your client, not a block explorer, not ZecLink.
+**Invoice and tip links for shielded Zcash.** Paste your own shielded address, share a link, get paid in private. Nobody
+gets a map of your money. Not the person paying, not a block explorer, not ZecLink.
+
+Made for anyone who gets paid, for example:
+
+- **Creators**: a tip jar for your bio or stream, with private messages from fans.
+- **Sellers and small shops**: an invoice per order, or one QR on the counter.
+- **Freelancers**: an invoice with a due date and a memo for each client.
+- **Communities and organizers**: dues, tickets or donations, without a public list of who paid.
 
 ZecLink never creates or holds wallets, accounts or funds. You bring your own wallet (for example [Zingo](https://zingolabs.org)
 or [Zodl, formerly Zashi](https://zodl.com/download/)).
@@ -50,9 +57,9 @@ Honest limits: anyone holding the link can read the invoice (like an invoice PDF
 ### CipherPay limits we found (checked with real testnet calls)
 
 - Invoice status by id is public (`GET /api/invoices/{id}/status` needs no key), so a live invoice link only needs the invoice id, never the key.
-- Tip jars can't use a creator's own key: every tip needs a fresh invoice, and CipherPay's key-free donation checkout
+- Tip jars can't use the owner's own key: every tip needs a fresh invoice, and CipherPay's key-free donation checkout
   (`POST /api/payment-links/{slug}/checkout`) answers `403 Invalid or missing checkout key` for third parties. Keeping
-  creators' keys would fix it, and we won't. So tip jars are direct payments.
+  people's keys would fix it, and we won't. So tip jars are direct payments.
 - The one exception is the site owner's own tip jar: if `ZECLINK_OWNER_HANDLE` and `CIPHERPAY_API_KEY` are set, `/t/<that handle>`
   gets live tracking into the owner's own CipherPay wallet. The server key is never used for anyone else.
 
@@ -83,7 +90,7 @@ Next.js (App Router) · TypeScript · Tailwind CSS · [`qrcode`](https://www.npm
 ```
 app/new, app/tip           create links (client-side; payload → URL fragment)
 app/i/[id], app/t/[handle] payment pages (decode fragment, QR, status, receipt)
-app/api/invoices           POST → CipherPay create invoice (creator's own key, or owner tip jar)
+app/api/invoices           POST → CipherPay create invoice (the user's own key, or the owner tip jar)
 app/api/status/[id]        GET  → CipherPay public status (proxied, no key)
 app/api/rates              GET  → CipherPay public rates (proxied, cached)
 lib/zcash.ts               bech32/bech32m validation, ZIP-321 builder, memo helpers
@@ -93,3 +100,9 @@ lib/payload.ts             fragment encode/decode
 ## License
 
 MIT
+
+## Brand
+
+Logo, favicons and the social card come from the ZecLink brand kit (Interlock mark). They live in `public/` and are
+wired up in `app/layout.tsx` metadata. Fonts (Space Grotesk, Inter, JetBrains Mono) are self-hosted by `next/font`, so the
+strict same-origin CSP still holds.
