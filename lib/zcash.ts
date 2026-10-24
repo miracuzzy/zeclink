@@ -59,7 +59,9 @@ function bech32Verify(str: string): { hrp: string; variant: "bech32" | "bech32m"
  *  - Sapling addresses (zs1… mainnet / ztestsapling1… testnet, bech32).
  * Transparent (t1/t3/tm/t2), TEX (tex1/textest1) and legacy Sprout (zc/zt) addresses are rejected.
  */
-export function checkAddress(raw: string): AddressCheck {
+export function checkAddress(raw: string, expect?: Network): AddressCheck {
+  const ua = expect === "mainnet" ? "u1…" : expect === "testnet" ? "utest1…" : "u1… / utest1…";
+  const sap = expect === "mainnet" ? "zs1…" : expect === "testnet" ? "ztestsapling1…" : "zs1… / ztestsapling1…";
   const addr = raw.trim();
   if (!addr) return { ok: false, error: "Enter a shielded Zcash address." };
   const lower = addr.toLowerCase();
@@ -70,7 +72,7 @@ export function checkAddress(raw: string): AddressCheck {
     };
   }
   if (/^z[ct][0-9a-z]/i.test(addr) && !lower.startsWith("zs1") && !lower.startsWith("ztestsapling1")) {
-    return { ok: false, error: "Legacy Sprout addresses are not supported. Use a Unified (u1…) or Sapling (zs1…) address." };
+    return { ok: false, error: `Legacy Sprout addresses are not supported. Use a Unified (${ua}) or Sapling (${sap}) address.` };
   }
   const dec = bech32Verify(addr);
   if (!dec) return { ok: false, error: "That doesn't look like a valid address (checksum failed). Copy it again from your wallet." };
@@ -84,7 +86,7 @@ export function checkAddress(raw: string): AddressCheck {
     case "ztestsapling":
       return dec.variant === "bech32" ? { ok: true, kind: "sapling", network: "testnet" } : bad();
     default:
-      return { ok: false, error: "Unrecognised address type. Use a Unified (u1… / utest1…) or Sapling (zs1… / ztestsapling1…) address." };
+      return { ok: false, error: `Unrecognised address type. Use a Unified (${ua}) or Sapling (${sap}) address.` };
   }
   function bad(): AddressCheck {
     return { ok: false, error: "Address checksum variant is wrong for this address type." };
@@ -249,4 +251,11 @@ export function liveUri(opts: { providerUri?: string; address: string; amountZec
   const amt = Number(opts.amountZec);
   const amount = Number.isFinite(amt) && amt > 0 ? amt.toFixed(8) : undefined;
   return { uri: buildZip321({ address: opts.address, amount, memo }), memo, amount };
+}
+
+/** Plain words for an address made for the other Zcash network than this site runs on. */
+export function networkMismatchText(addrNet: Network): string {
+  return addrNet === "testnet"
+    ? "That's a testnet address (test coins only). This site runs on real Zcash, so use your normal u1… or zs1… address."
+    : "That's a real Zcash (mainnet) address, but this site runs on testnet. Use a testnet address (utest1…).";
 }

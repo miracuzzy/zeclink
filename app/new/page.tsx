@@ -6,7 +6,7 @@ import CopyButton from "@/components/CopyButton";
 import Qr from "@/components/Qr";
 import WalletHelp from "@/components/WalletHelp";
 import { fmtFiat, forgetAddress, loadSavedAddress, saveAddress, useConfig, useRates } from "@/lib/client";
-import { checkAddress, MAX_LIVE_MEMO_BYTES, MAX_MEMO_BYTES, normaliseZec, utf8ByteLength } from "@/lib/zcash";
+import { checkAddress, networkMismatchText, MAX_LIVE_MEMO_BYTES, MAX_MEMO_BYTES, normaliseZec, utf8ByteLength } from "@/lib/zcash";
 import { encodePayload, randomId, type InvoicePayload } from "@/lib/payload";
 
 export default function NewInvoice() {
@@ -43,7 +43,7 @@ export default function NewInvoice() {
   }, []);
 
   const usesProvider = showKey && apiKey.trim().length > 0;
-  const addr = useMemo(() => checkAddress(address), [address]);
+  const addr = useMemo(() => checkAddress(address, cfg?.network), [address, cfg?.network]);
   const netMismatch = addr.ok && cfg && addr.network !== cfg.network;
   const zec = normaliseZec(amount);
   const memoBytes = utf8ByteLength(memo.trim());
@@ -185,7 +185,7 @@ export default function NewInvoice() {
           )}
           {address && addr.ok && netMismatch && (
             <p className="hint text-red-400">
-              This is a {addr.network} address but this deployment runs on {cfg?.network}.
+              {networkMismatchText(addr.network!)}
             </p>
           )}
           {(touched || address.length > 3) && address && !addr.ok && <p className="hint text-red-400">{addr.error}</p>}
@@ -210,7 +210,7 @@ export default function NewInvoice() {
             )}
           </div>
           <div className="mt-3">
-            <WalletHelp />
+            <WalletHelp network={cfg?.network} />
           </div>
         </div>
       )}
@@ -280,7 +280,7 @@ export default function NewInvoice() {
             <label className="label flex items-center justify-between" htmlFor="cpkey">
               <span>Your CipherPay API key</span>
               <a
-                href={cfg?.network === "mainnet" ? "https://cipherpay.app" : "https://testnet.cipherpay.app"}
+                href={cfg?.network === "mainnet" ? "https://www.cipherpay.app/dashboard/register" : "https://testnet.cipherpay.app/dashboard/register"}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs font-normal text-zinc-400 underline"

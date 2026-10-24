@@ -62,7 +62,7 @@ Honest limits: anyone holding the link can read the invoice (like an invoice PDF
 - Tip jars can't use the owner's own key: every tip needs a fresh invoice, and CipherPay's key-free donation checkout
   (`POST /api/payment-links/{slug}/checkout`) answers `403 Invalid or missing checkout key` for third parties. Keeping
   people's keys would fix it, and we won't. So tip jars are direct payments.
-- The one exception is the site owner's own tip jar: if `ZECLINK_OWNER_HANDLE` and `CIPHERPAY_API_KEY` are set, `/t/<that handle>`
+- The one exception is the site owner's own tip jar: if `ZECLINK_OWNER_HANDLE` and the owner key for this network are set, `/t/<that handle>`
   gets live tracking into the owner's own CipherPay wallet. The server key is never used for anyone else.
 
 ## Run locally
@@ -80,8 +80,17 @@ npm run build && npm start
 | --- | --- | --- |
 | `NEXT_PUBLIC_ZEC_NETWORK` | `testnet` | `testnet` or `mainnet`; addresses from the other network are rejected |
 | `CIPHERPAY_API_URL` | `https://api.testnet.cipherpay.app` (testnet) / `https://api.cipherpay.app` (mainnet) | Override, e.g. for a self-hosted CipherPay |
-| `CIPHERPAY_API_KEY` | none | Optional. The site owner's own key, used **only** for the owner's tip jar. Server-only. |
-| `ZECLINK_OWNER_HANDLE` | none | Optional. Tip jar handle that gets live tracking with `CIPHERPAY_API_KEY`. |
+| `CIPHERPAY_API_KEY_MAINNET` | none | Optional. The site owner's own **mainnet** CipherPay key, used **only** for the owner's tip jar. Server-only. The only key read on mainnet. |
+| `CIPHERPAY_API_KEY_TESTNET` | none | Same, for testnet. `CIPHERPAY_API_KEY` still works on testnet (older setups) and is ignored on mainnet. |
+| `ZECLINK_OWNER_HANDLE` | none | Optional. Handle of the site owner's tip jar (`/t/<handle>`). Needs a key or an owner address for this network. |
+| `ZECLINK_OWNER_ADDRESS` | none | Optional. The owner's own shielded address on this network. The owner jar pays it directly when there's no key, or if CipherPay is down. |
+
+### Switching to mainnet
+
+Set `NEXT_PUBLIC_ZEC_NETWORK=mainnet`, add `CIPHERPAY_API_KEY_MAINNET` (from a mainnet CipherPay account, see below) and/or
+`ZECLINK_OWNER_ADDRESS=u1…`, then redeploy (the network is baked in at build time). Old testnet links still open and show a
+"this link is for testnet" notice. Mainnet CipherPay account: sign up at https://www.cipherpay.app/dashboard/register with a
+viewing key (`uview1…` or `uivk1…`) from a wallet you use only for this, and save the API key it shows once.
 
 ## Stack
 

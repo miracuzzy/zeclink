@@ -5,7 +5,7 @@ import CopyButton from "@/components/CopyButton";
 import Qr from "@/components/Qr";
 import WalletHelp from "@/components/WalletHelp";
 import { forgetAddress, loadSavedAddress, saveAddress, useConfig } from "@/lib/client";
-import { checkAddress, normaliseZec } from "@/lib/zcash";
+import { checkAddress, networkMismatchText, normaliseZec } from "@/lib/zcash";
 import { encodePayload, type TipPayload } from "@/lib/payload";
 
 export default function NewTipJar() {
@@ -31,7 +31,7 @@ export default function NewTipJar() {
     }, 0);
     return () => clearTimeout(t);
   }, []);
-  const addr = useMemo(() => checkAddress(address), [address]);
+  const addr = useMemo(() => checkAddress(address, cfg?.network), [address, cfg?.network]);
   const netMismatch = addr.ok && cfg && addr.network !== cfg.network;
   const cleanHandle = handle.trim().replace(/^@/, "").toLowerCase();
   const handleOk = /^[a-z0-9_-]{2,30}$/.test(cleanHandle);
@@ -112,10 +112,11 @@ export default function NewTipJar() {
       </div>
       {usesProvider ? (
         <div className="space-y-2">
-          <ModeBanner live network={cfg?.network ?? "testnet"} compact />
+          <ModeBanner live={!!cfg?.ownerLive} network={cfg?.network ?? "testnet"} compact />
           <p className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-zinc-400">
-            This is the site owner&apos;s tip jar. Tips go to the owner&apos;s own wallet, each to a fresh one-time address, with live
-            tracking.
+            {cfg?.ownerLive
+              ? "This is the site owner's tip jar. Tips go to the owner's own wallet, each to a fresh one-time address, with live tracking."
+              : "This is the site owner's tip jar. Tips go straight to the owner's own wallet."}
           </p>
         </div>
       ) : (
@@ -132,7 +133,7 @@ export default function NewTipJar() {
             placeholder={cfg?.network === "mainnet" ? "u1… or zs1…" : "utest1… or ztestsapling1…"}
           />
           {address && !addr.ok && <p className="hint text-red-400">{addr.error}</p>}
-          {addr.ok && netMismatch && <p className="hint text-red-400">This address is for {addr.network}, deployment runs {cfg?.network}.</p>}
+          {addr.ok && netMismatch && <p className="hint text-red-400">{networkMismatchText(addr.network!)}</p>}
           {addr.ok && !netMismatch && <p className="hint text-emerald-400">✓ Valid shielded address</p>}
           <div className="mt-2 flex items-center justify-between gap-2 text-xs text-zinc-400">
             <label className="flex items-center gap-2">
@@ -155,7 +156,7 @@ export default function NewTipJar() {
           </div>
           <p className="hint">Tips go straight to this address. The tip page can&apos;t see the chain, so check your wallet for tips.</p>
           <div className="mt-3">
-            <WalletHelp />
+            <WalletHelp network={cfg?.network} />
           </div>
         </div>
       )}

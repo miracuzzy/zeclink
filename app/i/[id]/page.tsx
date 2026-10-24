@@ -2,6 +2,7 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import ModeBanner from "@/components/ModeBanner";
+import NetworkNotice from "@/components/NetworkNotice";
 import PaymentPanel from "@/components/PaymentPanel";
 import { fmtFiat, useConfig, useHash, useRates } from "@/lib/client";
 import { decodePayload, type InvoicePayload } from "@/lib/payload";
@@ -63,7 +64,7 @@ export default function InvoicePage() {
         {usd && (
           <p className="text-sm text-zinc-500">
             ≈ {usd}
-            {cfg.network === "testnet" && " · testnet"}
+            {addrCheck.network === "testnet" && " · testnet"}
           </p>
         )}
         {inv.l && <p className="mt-3 text-lg">{inv.l}</p>}
@@ -83,6 +84,7 @@ export default function InvoicePage() {
       </div>
 
       <ModeBanner live={inv.p === "cipherpay"} network={addrCheck.network!} compact />
+      <NetworkNotice linkNetwork={addrCheck.network!} siteNetwork={cfg.network} />
 
       <PaymentPanel
         uri={uri}

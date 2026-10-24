@@ -3,6 +3,7 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
 import ModeBanner from "@/components/ModeBanner";
+import NetworkNotice from "@/components/NetworkNotice";
 import PaymentPanel from "@/components/PaymentPanel";
 import { fmtFiat, useConfig, useHash, useRates } from "@/lib/client";
 import { decodePayload, randomId, type TipPayload } from "@/lib/payload";
@@ -30,6 +31,7 @@ export default function TipPage() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [pending, setPending] = useState<Pending | null>(null);
+  const [liveFailed, setLiveFailed] = useState(false);
 
   if (hash === null || !cfg) return <p className="text-center text-zinc-500">Loading…</p>;
   const tip = decodePayload<TipPayload>(hash, "tip");
@@ -45,12 +47,18 @@ export default function TipPage() {
     );
   }
   // Live tracking for tip jars only exists for this site owner's own jar (server key). Everyone
-  // else's tips go straight to the address in the link.
-  const live = tip.p === "owner" && !!cfg.ownerHandle && cfg.ownerHandle === tip.h;
-  if ((tip.p === "owner" || tip.p === "cipherpay") && !live) {
+  // else's tips go straight to the address in the link. The owner's jar falls back to the owner's
+  // own address (ZECLINK_OWNER_ADDRESS) when there's no key for this network, or if CipherPay errors.
+  const ownerJar = tip.p === "owner" && !!cfg.ownerHandle && cfg.ownerHandle === tip.h;
+  if ((tip.p === "owner" || tip.p === "cipherpay") && !ownerJar) {
     return <div className="card mx-auto max-w-md text-red-300">This tip jar link doesn&apos;t work on this site. Ask whoever shared it for a fresh one.</div>;
   }
-  const addrCheck = checkAddress(tip.a ?? "");
+  const live = ownerJar && cfg.ownerLive && !liveFailed;
+  const directAddr = ownerJar ? cfg.ownerAddress ?? "" : tip.a ?? "";
+  if (ownerJar && !live && !directAddr) {
+    return <div className="card mx-auto max-w-md text-red-300">This tip jar isn&apos;t set up on this site right now. Try again later.</div>;
+  }
+  const addrCheck = checkAddress(directAddr);
   if (!live && !addrCheck.ok) {
     return <div className="card mx-auto max-w-md text-red-300">This tip jar&apos;s address is not a valid shielded address. Do not pay it.</div>;
   }
@@ -65,8 +73,8 @@ export default function TipPage() {
       const memo = message.trim() || undefined;
       setPending({
         id: randomId(),
-        uri: buildZip321({ address: tip!.a!, amount: zec, memo, label: `Tip for @${tip!.h}` }),
-        address: tip!.a!,
+        uri: buildZip321({ address: directAddr, amount: zec, memo, label: `Tip for @${tip!.h}` }),
+        address: directAddr,
         amount: zec,
         memo,
         message: memo,
@@ -91,7 +99,11 @@ export default function TipPage() {
       if (!built) throw new Error("Message is too long for a Zcash memo");
       setPending({ id: j.invoice_id, uri: built.uri, address: j.payment_address, amount: built.amount ?? amount, memo: built.memo, message: text, createdAt: now() });
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Something went wrong");
+      if (ownerJar && cfg!.ownerAddress && checkAddress(cfg!.ownerAddress).ok) {
+        // Live tracking is down: let the tipper pay the owner directly instead.
+        setLiveFailed(true);
+        setErr("Live tracking is down right now, so this tip will go straight to the wallet. Tap Tip again.");
+      } else setErr(e instanceof Error ? e.message : "Something went wrong");
     } finally {
       setBusy(false);
     }
@@ -108,6 +120,7 @@ export default function TipPage() {
         {tip.b && <p className="mt-2 text-zinc-300">{tip.b}</p>}
       </div>
       <ModeBanner live={live} network={live ? cfg.network : addrCheck.network!} compact />
+      {!live && <NetworkNotice linkNetwork={addrCheck.network!} siteNetwork={cfg.network} />}
 
       {!pending ? (
         <div className="card space-y-4">
