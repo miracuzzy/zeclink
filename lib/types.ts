@@ -9,13 +9,13 @@ export interface StatusResponse {
 }
 
 export interface PublicConfig {
-  provider: "demo" | "cipherpay";
   network: "testnet" | "mainnet";
+  /** Handle of the deployment owner's tip jar that gets live tracking with the server key, if any. */
+  ownerHandle: string | null;
   payeeName: string | null;
 }
 
 export interface RatesResponse {
   usd: number;
-  eur: number;
   updatedAt: string | null;
 }

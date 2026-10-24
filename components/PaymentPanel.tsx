@@ -12,7 +12,7 @@ interface Props {
   address: string;
   amountZec: string;
   memo?: string;
-  provider: "demo" | "cipherpay";
+  provider: "direct" | "cipherpay";
   network: "testnet" | "mainnet";
   invoiceId: string;
   receipt: Omit<ReceiptData, "status" | "txid" | "paidAt" | "simulated" | "network">;
@@ -63,11 +63,12 @@ export default function PaymentPanel(p: Props) {
     };
   }, [p.provider, p.invoiceId]);
 
-  const simulated = p.provider === "demo";
+  const live = p.provider === "cipherpay";
+  const [markedSent, setMarkedSent] = useState(false);
 
   return (
     <div className="space-y-5">
-      {status !== "confirmed" && (
+      {(!live || status !== "confirmed") && (
         <div className="card space-y-4">
           <a href={p.uri} className="block" aria-label="Open in Zcash wallet">
             <Qr value={p.uri} label="ZIP-321 payment request QR code" />
@@ -94,40 +95,45 @@ export default function PaymentPanel(p: Props) {
         </div>
       )}
 
-      <StatusTracker status={status} simulated={simulated} />
+      {live ? (
+        <StatusTracker status={status} />
+      ) : (
+        <div className="card space-y-3">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-400">Payment status</h3>
+          {!markedSent ? (
+            <>
+              <p className="text-zinc-200">Waiting for payment.</p>
+              <p className="text-sm text-zinc-500">
+                This link can&apos;t see the chain, so it won&apos;t update by itself. The person getting paid should check their wallet.
+              </p>
+              <button className="btn-ghost w-full" onClick={() => setMarkedSent(true)}>
+                I&apos;ve sent it
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="text-zinc-200">You marked this as sent.</p>
+              <p className="text-sm text-amber-200/90">
+                That&apos;s just your note on this device, not a confirmation. The payment is only done once it shows up in the
+                receiver&apos;s wallet.
+              </p>
+              <button className="btn-ghost w-full" onClick={() => setMarkedSent(false)}>
+                Undo
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
-      {p.provider === "cipherpay" && (
+      {live && (
         <p className="text-center text-xs text-zinc-500">
           {err ? err : lastCheck ? `Checking the network every 5s · last check ${new Date(lastCheck).toLocaleTimeString()}` : "Connecting…"}
         </p>
       )}
 
-      {simulated && status !== "confirmed" && (
-        <div className="card border-dashed border-amber-400/40">
-          <p className="mb-3 text-sm text-amber-200">
-            <b>Demo controls.</b> These buttons fake the blockchain so you can preview the flow. They do not move or detect any ZEC.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <button className="btn-ghost" disabled={status !== "awaiting"} onClick={() => setStatus("detected")}>
-              Simulate: payment detected
-            </button>
-            <button
-              className="btn-ghost"
-              disabled={status !== "detected"}
-              onClick={() => {
-                setStatus("confirmed");
-                setPaidAt(new Date().toISOString());
-              }}
-            >
-              Simulate: confirmed
-            </button>
-          </div>
-        </div>
-      )}
-
-      {status === "confirmed" && (
+      {live && status === "confirmed" && (
         <Receipt
-          data={{ ...p.receipt, status, txid, paidAt: paidAt ?? new Date().toISOString(), simulated, network: p.network }}
+          data={{ ...p.receipt, status, txid, paidAt: paidAt ?? new Date().toISOString(), simulated: false, network: p.network }}
         />
       )}
     </div>

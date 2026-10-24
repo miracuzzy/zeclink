@@ -1,11 +1,13 @@
-export const metadata = { title: "Privacy — ZecLink" };
+export const metadata = { title: "Privacy | ZecLink" };
 
 const rows: [string, string, string][] = [
-  ["Your receiving address, amount, label, memo, due date", "Only inside the link, after the #", "Browsers never send the # fragment to a server, so ZecLink's server, CDN and logs never see it."],
-  ["Invoice database", "None", "There is no database. Close the tab and the only copy is the link you shared."],
+  ["Your address, amount, label, memo, due date", "Only inside the link, after the #", "Browsers never send the # part to a server, so ZecLink's server, CDN and logs never see it."],
+  ["Invoice database", "None", "There's no database. Close the tab and the only copy is the link you shared."],
+  ["Wallets and accounts", "We don't make any", "ZecLink never creates, holds or touches a wallet. You use your own and keep your own keys."],
   ["Payer identity, IP, wallet", "Not collected", "No accounts, no cookies, no analytics, no fingerprinting. The payer's wallet talks to the Zcash network, not to us."],
-  ["Spending keys / seed phrases", "Never", "ZecLink never asks for them. In live mode CipherPay holds only a read-only viewing key."],
-  ["Third-party requests from your browser", "None", "A strict Content-Security-Policy only allows this origin. Fonts are system fonts; QR codes are drawn locally."],
+  ["Spending keys and seed phrases", "Never", "ZecLink never asks for them."],
+  ["Remembered address", "Your browser only", "If you tick \"remember my address on this device\", your address is saved in this browser's local storage so it's filled in next time. It's never sent to us. \"Forget it\" deletes it. API keys are never remembered."],
+  ["Third-party requests from your browser", "None", "A strict Content-Security-Policy only allows this site. Fonts are system fonts and QR codes are drawn on your device."],
 ];
 
 export default function Privacy() {
@@ -13,7 +15,7 @@ export default function Privacy() {
     <article className="mx-auto max-w-2xl space-y-8">
       <header>
         <h1 className="text-3xl font-bold">What ZecLink stores and leaks</h1>
-        <p className="mt-2 text-zinc-400">Short version: almost nothing, and we tell you exactly what.</p>
+        <p className="mt-2 text-zinc-400">Short version: almost nothing, and here&apos;s exactly what.</p>
       </header>
 
       <section className="space-y-3">
@@ -31,30 +33,53 @@ export default function Privacy() {
       <section className="card space-y-3 text-sm text-zinc-300">
         <h2 className="text-lg font-semibold text-zinc-100">On-chain</h2>
         <p>
-          ZecLink only accepts <b>shielded</b> addresses (Unified <span className="font-mono">u1…</span> / Sapling{" "}
-          <span className="font-mono">zs1…</span>, or their testnet forms). Transparent <span className="font-mono">t…</span>{" "}
-          addresses are rejected because their payments are public. A shielded payment hides the sender, receiver, amount and
-          memo from everyone except the two parties.
+          ZecLink only accepts <b>shielded</b> addresses (Unified <span className="font-mono">u1…</span> or Sapling{" "}
+          <span className="font-mono">zs1…</span>, or their testnet forms). Transparent <span className="font-mono">t…</span>, TEX
+          and old Sprout addresses are rejected because they leak. A shielded payment hides the sender, receiver, amount and memo
+          from everyone except the people involved.
         </p>
       </section>
 
       <section className="card space-y-3 text-sm text-zinc-300">
-        <h2 className="text-lg font-semibold text-zinc-100">When live detection (CipherPay) is on</h2>
+        <h2 className="text-lg font-semibold text-zinc-100">Default: direct payments</h2>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>You paste your own address. The payer&apos;s wallet pays it straight from the QR code or link.</li>
+          <li>Nobody but you and the payer is involved. No third party sees anything.</li>
+          <li>
+            Because nothing holds a viewing key, the page can&apos;t see the payment. It says &quot;waiting for payment&quot; and the
+            payer can tap &quot;I&apos;ve sent it&quot;. That&apos;s only a note on their device, never a confirmation. Check your
+            wallet.
+          </li>
+        </ul>
+      </section>
+
+      <section className="card space-y-3 text-sm text-zinc-300">
+        <h2 className="text-lg font-semibold text-zinc-100">Optional: live tracking with your own CipherPay account</h2>
         <ul className="list-disc space-y-1 pl-5">
           <li>
-            The deployment owner registers their wallet&apos;s <b>Unified Full Viewing Key</b> with CipherPay. It can see incoming
-            payments; it cannot spend.
+            If you have a CipherPay account (it holds a read-only viewing key for <b>your</b> wallet), you can paste its API key when
+            making an invoice. Your browser sends it to ZecLink&apos;s server once, the server uses it for that single request to
+            CipherPay and drops it. It&apos;s never saved, logged, put in the link or kept in your browser.
           </li>
           <li>
-            For each invoice ZecLink&apos;s server sends CipherPay only an <b>amount</b> and the generic name &quot;ZecLink
-            invoice&quot;/&quot;ZecLink tip&quot;. Your label, memo, name and due date are never sent.
+            CipherPay gets only an <b>amount</b> and the generic name &quot;ZecLink invoice&quot;. Your label, memo, name and due date
+            never go to its API. It returns a fresh one-time address in your wallet, so separate payments can&apos;t be linked
+            on-chain.
           </li>
           <li>
-            CipherPay returns a fresh one-time address per invoice, so separate payments can&apos;t be linked together on-chain.
+            Your memo is added to the payment request in the browser, after CipherPay&apos;s short reference code (like{" "}
+            <span className="font-mono">CP-1A2B3C4D</span>), and travels only inside the encrypted memo. CipherPay spots the payment
+            by its unique address, so it doesn&apos;t need the memo.
           </li>
           <li>
-            The payment page polls status through ZecLink&apos;s server (<span className="font-mono">/api/status/&lt;id&gt;</span>),
-            so the payer&apos;s browser never contacts CipherPay. CipherPay does learn that an invoice of that amount was paid.
+            <b>Who sees what:</b> CipherPay sees the invoice amount and, using your viewing key, the payment that comes in. Since it
+            holds that viewing key, it could technically read the memo too. Nobody else sees any of it. The page checks status
+            through ZecLink&apos;s own server (<span className="font-mono">/api/status/&lt;id&gt;</span>), so the payer&apos;s browser
+            never talks to CipherPay.
+          </li>
+          <li>
+            Tip jars can&apos;t use your own CipherPay key yet. Each tip needs a fresh invoice, which would mean keeping your key, and
+            we won&apos;t do that. So tip jars are direct payments (the site owner&apos;s own jar is the only exception).
           </li>
         </ul>
       </section>
@@ -62,16 +87,13 @@ export default function Privacy() {
       <section className="card space-y-3 text-sm text-zinc-300">
         <h2 className="text-lg font-semibold text-zinc-100">Honest limits</h2>
         <ul className="list-disc space-y-1 pl-5">
-          <li>Anyone you give the link to can read the invoice. Share it like you would share an invoice PDF.</li>
+          <li>Anyone you give the link to can read the invoice. Share it like you&apos;d share an invoice PDF.</li>
           <li>
-            Like any website, the host (Vercel) sees the page path and IP of visitors. In live mode the path contains the CipherPay
-            invoice id, never the address or amount.
+            Like any website, the host (Vercel) sees page paths and visitor IPs. Paths only hold a random id or the CipherPay invoice
+            id, never the address or amount.
           </li>
           <li>The USD estimate comes from CipherPay&apos;s public price feed, fetched by our server, not your browser.</li>
-          <li>
-            <b>Demo mode</b> (no CipherPay key configured) cannot see payments. The QR is a real request to the address entered,
-            but the status steps are simulated with buttons and the receipt is stamped &quot;NOT A REAL PAYMENT&quot;.
-          </li>
+          <li>The payer trusts the link sender to give the right address, same as with any invoice.</li>
         </ul>
       </section>
     </article>

@@ -40,8 +40,8 @@ function receiptHtml(d: ReceiptData) {
 h1{font-size:20px}table{width:100%;border-collapse:collapse}td{padding:8px 0;border-bottom:1px solid #eee;vertical-align:top;font-size:14px}
 td:first-child{color:#666;width:40%}.w{border:2px solid #c00;color:#c00;padding:10px;font-weight:700;text-align:center;margin:16px 0}
 .f{color:#888;font-size:12px;margin-top:24px}</style></head><body>
-<h1>⛨ ZecLink — payment receipt</h1>
-${d.simulated ? '<div class="w">DEMO / SIMULATED — NOT A REAL PAYMENT</div>' : ""}
+<h1>⛨ ZecLink payment receipt</h1>
+${d.simulated ? '<div class="w">DEMO, NOT A REAL PAYMENT</div>' : ""}
 <table>${rows.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table>
 <p class="f">Shielded Zcash payment: sender, recipient and amount are encrypted on-chain. This receipt was generated in the browser and was not stored by ZecLink.</p>
 </body></html>`;
@@ -68,7 +68,7 @@ export default function Receipt({ data }: { data: ReceiptData }) {
       </div>
       {data.simulated && (
         <p className="rounded-lg border border-red-500/50 bg-red-500/10 p-2 text-center text-sm font-bold text-red-300">
-          DEMO / SIMULATED — NOT A REAL PAYMENT
+          DEMO, NOT A REAL PAYMENT
         </p>
       )}
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">

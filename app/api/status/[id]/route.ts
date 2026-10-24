@@ -1,4 +1,4 @@
-import { activeProvider, cipherpayBase } from "@/lib/server-config";
+import { cipherpayBase } from "@/lib/server-config";
 
 export const dynamic = "force-dynamic";
 
@@ -20,13 +20,13 @@ function mapStatus(s: string): PublicStatus {
   }
 }
 
-/** Proxies CipherPay's public status endpoint so the payer's browser only ever talks to this origin. */
+/**
+ * Proxies CipherPay's public status endpoint (GET /api/invoices/{id}/status needs no API key)
+ * so the payer's browser only ever talks to this origin. No key is used or needed here.
+ */
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
-  if (!/^[A-Za-z0-9_-]{1,80}$/.test(id)) return Response.json({ error: "Bad id" }, { status: 400 });
-  if (activeProvider() !== "cipherpay") {
-    return Response.json({ error: "Demo mode: no live detection on this deployment." }, { status: 409 });
-  }
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return Response.json({ error: "Bad id" }, { status: 400 });
   try {
     const res = await fetch(`${cipherpayBase()}/api/invoices/${encodeURIComponent(id)}/status`, {
       cache: "no-store",

@@ -9,7 +9,7 @@ export function useConfig(): PublicConfig | null {
     fetch("/api/config", { cache: "no-store" })
       .then((r) => r.json())
       .then((j) => alive && setCfg(j))
-      .catch(() => alive && setCfg({ provider: "demo", network: "testnet", payeeName: null }));
+      .catch(() => alive && setCfg({ network: "testnet", ownerHandle: null, payeeName: null }));
     return () => {
       alive = false;
     };
@@ -51,4 +51,25 @@ export function fmtFiat(zec: number, rate: number | undefined, cur: "USD"): stri
     currency: cur,
     maximumFractionDigits: 2,
   }).format(v);
+}
+
+const ADDR_KEY = "zeclink:address";
+
+/** The creator's own address, saved only in this browser if they ticked "remember". Never any key. */
+export function loadSavedAddress(): string | null {
+  try {
+    return window.localStorage.getItem(ADDR_KEY);
+  } catch {
+    return null;
+  }
+}
+export function saveAddress(a: string) {
+  try {
+    window.localStorage.setItem(ADDR_KEY, a);
+  } catch {}
+}
+export function forgetAddress() {
+  try {
+    window.localStorage.removeItem(ADDR_KEY);
+  } catch {}
 }

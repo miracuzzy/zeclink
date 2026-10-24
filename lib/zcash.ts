@@ -66,7 +66,7 @@ export function checkAddress(raw: string): AddressCheck {
   if (/^t[1-3m]/i.test(addr) || lower.startsWith("tex1") || lower.startsWith("textest1")) {
     return {
       ok: false,
-      error: "That is a transparent address. Transparent payments are public on-chain — ZecLink only accepts shielded (Unified or Sapling) addresses.",
+      error: "That is a transparent address. Transparent payments are public on-chain. ZecLink only accepts shielded (Unified or Sapling) addresses.",
     };
   }
   if (/^z[ct][0-9a-z]/i.test(addr) && !lower.startsWith("zs1") && !lower.startsWith("ztestsapling1")) {
@@ -141,4 +141,112 @@ export function buildZip321(opts: { address: string; amount?: string; memo?: str
 
 export function shortAddr(a: string, n = 10): string {
   return a.length <= n * 2 + 1 ? a : `${a.slice(0, n)}…${a.slice(-n)}`;
+}
+
+// ---------------------------------------------------------------------------
+// Live (CipherPay) mode: carrying the user's private memo.
+//
+// CipherPay returns a ready-made ZIP-321 URI whose memo is only its reference code
+// (e.g. "CP-1A2B3C4D"). CipherPay matches payments by the invoice's unique diversified
+// address first; the memo code is only a fallback for legacy invoices
+// (cipherpay-api src/invoices/matching.rs). So we can safely put our own memo in the
+// URI — built here, in the browser — as long as the address and amount stay untouched.
+// We keep the memo code as the first line anyway, for that fallback and for the
+// recipient's own reconciliation.
+// ---------------------------------------------------------------------------
+
+/** Bytes reserved for the provider memo code + newline ("CP-XXXXXXXX\n" = 12 bytes; rounded up). */
+export const PROVIDER_MEMO_RESERVE = 16;
+/** Max bytes of user text when the memo also has to carry a provider memo code. */
+export const MAX_LIVE_MEMO_BYTES = MAX_MEMO_BYTES - PROVIDER_MEMO_RESERVE;
+
+/** "CP-XXXX\n<text>" (or just one of them). Returns null if the result would exceed 512 bytes. */
+export function composeMemo(memoCode: string | undefined, text: string | undefined): string | null | undefined {
+  const t = text?.trim() || "";
+  const c = memoCode?.trim() || "";
+  const memo = c && t ? `${c}\n${t}` : c || t;
+  if (!memo) return undefined;
+  return utf8ByteLength(memo) <= MAX_MEMO_BYTES ? memo : null;
+}
+
+export interface Zip321Primary {
+  address: string;
+  amount?: string;
+  memo?: string; // decoded UTF-8
+}
+
+/** Parse the first payment (index 0) of a ZIP-321 URI. Supports both `zcash:ADDR?…` and `zcash:?address=…` forms. */
+export function parseZip321Primary(uri: string): Zip321Primary | null {
+  if (!uri.toLowerCase().startsWith("zcash:")) return null;
+  const rest = uri.slice(6);
+  const q = rest.indexOf("?");
+  const path = q === -1 ? rest : rest.slice(0, q);
+  const params = q === -1 ? [] : rest.slice(q + 1).split("&").filter(Boolean);
+  let address = path;
+  let amount: string | undefined;
+  let memo: string | undefined;
+  for (const p of params) {
+    const eq = p.indexOf("=");
+    const k = eq === -1 ? p : p.slice(0, eq);
+    const v = eq === -1 ? "" : p.slice(eq + 1);
+    if (k === "address" || k === "address.0") address = v;
+    else if (k === "amount" || k === "amount.0") amount = v;
+    else if (k === "memo" || k === "memo.0") {
+      try {
+        memo = new TextDecoder("utf-8", { fatal: true }).decode(base64UrlDecodeBytes(v));
+      } catch {
+        return null;
+      }
+    }
+  }
+  if (!address) return null;
+  return { address, amount, memo };
+}
+
+/**
+ * Replace (or add) the memo of payment 0 in a provider-issued ZIP-321 URI, leaving every
+ * other parameter — address, amount and any extra outputs (e.g. CipherPay's fee output,
+ * `address.1`/`amount.1`/`memo.1`) — byte-for-byte unchanged.
+ * Returns null if the URI isn't a parseable request to `expectedAddress`.
+ */
+export function withPrimaryMemo(uri: string, expectedAddress: string, memo: string): string | null {
+  const parsed = parseZip321Primary(uri);
+  if (!parsed || parsed.address !== expectedAddress) return null;
+  if (utf8ByteLength(memo) > MAX_MEMO_BYTES) return null;
+  const enc = base64UrlEncodeBytes(new TextEncoder().encode(memo));
+  const q = uri.indexOf("?");
+  if (q === -1) return `${uri}?memo=${enc}`;
+  const base = uri.slice(0, q);
+  const params = uri.slice(q + 1).split("&").filter(Boolean);
+  // In the `zcash:?address=…` form, a bare `memo` belongs to payment 0 (ZIP-321: no index = index 0).
+  let replaced = false;
+  const out = params.map((p) => {
+    const k = p.split("=", 1)[0];
+    if (k === "memo" || k === "memo.0") {
+      replaced = true;
+      return `${k}=${enc}`;
+    }
+    return p;
+  });
+  if (!replaced) out.push(`memo=${enc}`);
+  return `${base}?${out.join("&")}`;
+}
+
+/**
+ * Live-mode URI: CipherPay's URI with our memo (memo code + user text) swapped in.
+ * Falls back to building a single-output URI to the same unique address if the provider URI
+ * can't be parsed (detection keys on the address, so it still works).
+ */
+export function liveUri(opts: { providerUri?: string; address: string; amountZec: string; memoCode?: string; text?: string }): { uri: string; memo?: string; amount?: string } | null {
+  const memo = composeMemo(opts.memoCode, opts.text);
+  if (memo === null) return null;
+  if (opts.providerUri) {
+    const parsedAmount = parseZip321Primary(opts.providerUri)?.amount;
+    if (!memo) return { uri: opts.providerUri, amount: parsedAmount };
+    const u = withPrimaryMemo(opts.providerUri, opts.address, memo);
+    if (u) return { uri: u, memo, amount: parsedAmount };
+  }
+  const amt = Number(opts.amountZec);
+  const amount = Number.isFinite(amt) && amt > 0 ? amt.toFixed(8) : undefined;
+  return { uri: buildZip321({ address: opts.address, amount, memo }), memo, amount };
 }

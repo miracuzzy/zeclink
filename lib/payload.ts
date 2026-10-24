@@ -3,14 +3,18 @@
 // amount, memo or label. Nothing is stored in a database.
 import { base64UrlDecodeBytes, base64UrlEncodeBytes } from "./zcash";
 
-export type ProviderId = "demo" | "cipherpay";
+// "direct": pay straight to the creator's own address, no tracking (default).
+// "cipherpay": creator's own CipherPay account made this invoice, status is tracked live.
+// "owner": tip jar of this deployment's owner, tracked with the server's own CipherPay key.
+// "demo": links made by older versions; treated as "direct".
+export type ProviderId = "direct" | "cipherpay" | "owner" | "demo";
 
 export interface InvoicePayload {
   v: 1;
   k: "inv";
   p: ProviderId;
   id: string;
-  a?: string; // receiving address (demo/direct mode)
+  a?: string; // receiving address (direct mode)
   z: string; // amount in ZEC (string, ≤ 8 dp)
   l?: string; // label / what it's for
   m?: string; // memo
@@ -31,7 +35,7 @@ export interface TipPayload {
   h: string; // handle
   n?: string; // display name
   b?: string; // bio / thank-you note
-  a?: string; // receiving address (demo/direct mode)
+  a?: string; // receiving address (direct mode)
   s?: string[]; // suggested amounts in ZEC
 }
 

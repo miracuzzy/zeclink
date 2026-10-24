@@ -4,7 +4,7 @@ import Logo from "@/components/Logo";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ZecLink — private payment links for shielded ZEC",
+  title: "ZecLink: private payment links for shielded ZEC",
   description: "Stripe-style invoice and tip links for shielded Zcash. Get paid without exposing your income.",
   referrer: "no-referrer",
   robots: { index: false, follow: false },

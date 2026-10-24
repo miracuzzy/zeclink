@@ -3,7 +3,6 @@ import { cipherpayBase } from "./server-config";
 
 export interface Rates {
   usd: number;
-  eur: number;
   updatedAt: string | null;
 }
 
@@ -18,7 +17,7 @@ export async function getRates(): Promise<Rates | null> {
     if (!res.ok) return null;
     const j = await res.json();
     if (typeof j.zec_usd !== "number") return null;
-    return { usd: j.zec_usd, eur: j.zec_eur, updatedAt: j.updated_at ?? null };
+    return { usd: j.zec_usd, updatedAt: j.updated_at ?? null };
   } catch {
     return null;
   }

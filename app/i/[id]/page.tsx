@@ -5,7 +5,7 @@ import ModeBanner from "@/components/ModeBanner";
 import PaymentPanel from "@/components/PaymentPanel";
 import { fmtFiat, useConfig, useHash, useRates } from "@/lib/client";
 import { decodePayload, type InvoicePayload } from "@/lib/payload";
-import { buildZip321, checkAddress } from "@/lib/zcash";
+import { buildZip321, checkAddress, liveUri } from "@/lib/zcash";
 
 export default function InvoicePage() {
   const { id } = useParams<{ id: string }>();
@@ -21,8 +21,8 @@ export default function InvoicePage() {
       <div className="card mx-auto max-w-md text-center">
         <h1 className="text-xl font-semibold">Invoice not found</h1>
         <p className="mt-2 text-sm text-zinc-400">
-          The invoice details live in the part of the link after <span className="font-mono">#</span>. This link is missing or
-          damaged — ask the sender to share it again.
+          The invoice details live in the part of the link after <span className="font-mono">#</span>. This link is missing a
+          piece, so ask the sender to share it again.
         </p>
         <Link href="/new" className="btn-primary mt-4">
           Create your own
@@ -40,9 +40,15 @@ export default function InvoicePage() {
       </div>
     );
   }
-  // A link made in demo mode must never be shown as "live", and vice-versa.
-  const providerMismatch = inv.p === "cipherpay" && cfg.provider !== "cipherpay";
-  const uri = inv.p === "cipherpay" && inv.u ? inv.u : buildZip321({ address, amount: inv.z, memo: inv.m, label: inv.l || inv.n });
+  // Live mode: CipherPay's URI only carries its memo code, so add the invoice memo here in the
+  // browser (memo code first line + memo). The memo comes from the # fragment and is never sent anywhere.
+  const live = inv.p === "cipherpay" ? liveUri({ providerUri: inv.u, address, amountZec: inv.z, memoCode: inv.mc, text: inv.m }) : null;
+  if (inv.p === "cipherpay" && !live) {
+    return <div className="card mx-auto max-w-md text-center text-red-300">This invoice&apos;s memo is too long for a Zcash memo.</div>;
+  }
+  const uri = live ? live.uri : buildZip321({ address, amount: inv.z, memo: inv.m, label: inv.l || inv.n });
+  const payMemo = live ? live.memo : inv.m;
+  const payAmount = live?.amount ?? inv.z;
   const zecNum = Number(inv.z);
   const usd = fmtFiat(zecNum, rates?.usd, "USD");
   const overdue = inv.d && new Date(inv.d + "T23:59:59") < new Date();
@@ -76,21 +82,14 @@ export default function InvoicePage() {
         {inv.m && <p className="mt-3 rounded-lg bg-white/[0.03] p-2 text-sm text-zinc-400">Memo: {inv.m}</p>}
       </div>
 
-      {providerMismatch ? (
-        <div className="card text-sm text-red-300">
-          This invoice was created with live detection, but live detection is not configured on this deployment, so status
-          can&apos;t be shown here.
-        </div>
-      ) : (
-        <ModeBanner cfg={{ ...cfg, provider: inv.p }} compact />
-      )}
+      <ModeBanner live={inv.p === "cipherpay"} network={addrCheck.network!} compact />
 
       <PaymentPanel
         uri={uri}
         address={address}
-        amountZec={inv.z}
-        memo={inv.p === "demo" ? inv.m : undefined}
-        provider={providerMismatch ? "demo" : inv.p}
+        amountZec={payAmount}
+        memo={payMemo}
+        provider={inv.p === "cipherpay" ? "cipherpay" : "direct"}
         network={addrCheck.network!}
         invoiceId={inv.id}
         receipt={{
@@ -101,7 +100,7 @@ export default function InvoicePage() {
           amountZec: inv.z,
           address,
           createdAt: inv.c,
-          detectedBy: inv.p === "cipherpay" ? "CipherPay (viewing-key scan of mempool + blocks)" : "Nothing — simulated in demo mode",
+          detectedBy: "CipherPay (viewing-key scan of mempool + blocks)",
         }}
       />
     </div>

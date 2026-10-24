@@ -1,11 +1,12 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import ModeBanner from "@/components/ModeBanner";
 import CopyButton from "@/components/CopyButton";
 import Qr from "@/components/Qr";
-import { fmtFiat, useConfig, useRates } from "@/lib/client";
-import { checkAddress, MAX_MEMO_BYTES, normaliseZec, utf8ByteLength } from "@/lib/zcash";
+import WalletHelp from "@/components/WalletHelp";
+import { fmtFiat, forgetAddress, loadSavedAddress, saveAddress, useConfig, useRates } from "@/lib/client";
+import { checkAddress, MAX_LIVE_MEMO_BYTES, MAX_MEMO_BYTES, normaliseZec, utf8ByteLength } from "@/lib/zcash";
 import { encodePayload, randomId, type InvoicePayload } from "@/lib/payload";
 
 export default function NewInvoice() {
@@ -21,15 +22,35 @@ export default function NewInvoice() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [link, setLink] = useState<string | null>(null);
+  const [linkLive, setLinkLive] = useState(false);
+  const [remember, setRemember] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [showKey, setShowKey] = useState(false);
+  const [apiKey, setApiKey] = useState("");
 
-  const usesProvider = cfg?.provider === "cipherpay";
+  // Prefill the creator's own address if they asked this browser to remember it.
+  // (Read after mount, so the server-rendered HTML and first client render match.)
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const a = loadSavedAddress();
+      if (a) {
+        setAddress((cur) => cur || a);
+        setRemember(true);
+        setSaved(true);
+      }
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
+
+  const usesProvider = showKey && apiKey.trim().length > 0;
   const addr = useMemo(() => checkAddress(address), [address]);
   const netMismatch = addr.ok && cfg && addr.network !== cfg.network;
   const zec = normaliseZec(amount);
-  const memoBytes = utf8ByteLength(memo);
+  const memoBytes = utf8ByteLength(memo.trim());
+  const memoLimit = usesProvider ? MAX_LIVE_MEMO_BYTES : MAX_MEMO_BYTES;
   const usd = zec ? fmtFiat(Number(zec), rates?.usd, "USD") : null;
 
-  const valid = !!zec && memoBytes <= MAX_MEMO_BYTES && (usesProvider || (addr.ok && !netMismatch));
+  const valid = !!zec && memoBytes <= memoLimit && (usesProvider || (addr.ok && !netMismatch));
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -39,11 +60,17 @@ export default function NewInvoice() {
     setBusy(true);
     try {
       let payload: InvoicePayload;
+      if (!usesProvider && remember) {
+        saveAddress(address.trim());
+        setSaved(true);
+      }
       if (usesProvider) {
+        // The key goes to our server for this one request only, so it can ask CipherPay for an
+        // invoice. It's never saved, logged or put in the link.
         const res = await fetch("/api/invoices", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ kind: "invoice", amountZec: zec }),
+          body: JSON.stringify({ kind: "invoice", amountZec: zec, apiKey: apiKey.trim() }),
         });
         const j = await res.json();
         if (!res.ok) throw new Error(j.error || "Could not create invoice");
@@ -68,7 +95,7 @@ export default function NewInvoice() {
         payload = {
           v: 1,
           k: "inv",
-          p: "demo",
+          p: "direct",
           id: randomId(),
           a: address.trim(),
           z: zec!,
@@ -79,6 +106,8 @@ export default function NewInvoice() {
           c: Date.now(),
         };
       }
+      setApiKey("");
+      setLinkLive(usesProvider);
       setLink(`${window.location.origin}/i/${payload.id}#${encodePayload(payload)}`);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Something went wrong");
@@ -91,7 +120,7 @@ export default function NewInvoice() {
     return (
       <div className="mx-auto max-w-md space-y-5">
         <h1 className="text-2xl font-bold">Your invoice link is ready</h1>
-        <ModeBanner cfg={cfg} compact />
+        <ModeBanner live={linkLive} network={cfg?.network ?? "testnet"} compact />
         <div className="card space-y-4">
           <Qr value={link} size={220} label="QR code of the invoice page link" />
           <code className="block break-all rounded-lg bg-black/40 p-3 text-xs text-zinc-300">{link}</code>
@@ -102,8 +131,8 @@ export default function NewInvoice() {
             </a>
           </div>
           <p className="text-xs text-zinc-500">
-            Everything after the <span className="font-mono">#</span> is the invoice itself. It never reaches our server — keep
-            the link somewhere safe; we can&apos;t recover it for you.
+            Everything after the <span className="font-mono">#</span> is the invoice itself. It never reaches our server, so keep
+            the link somewhere safe. We can&apos;t get it back for you.
           </p>
         </div>
         <button className="btn-ghost w-full" onClick={() => setLink(null)}>
@@ -119,7 +148,6 @@ export default function NewInvoice() {
         <h1 className="text-2xl font-bold">New invoice</h1>
         <p className="text-sm text-zinc-400">Get paid in shielded ZEC. Takes 30 seconds.</p>
       </div>
-      <ModeBanner cfg={cfg} />
 
       <div>
         <label className="label" htmlFor="name">
@@ -130,8 +158,8 @@ export default function NewInvoice() {
 
       {usesProvider ? (
         <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-zinc-400">
-          Payments go to the shielded wallet linked to this deployment&apos;s CipherPay merchant account. CipherPay derives a
-          fresh one-time Unified Address for every invoice from your viewing key, so payments can&apos;t be linked to each other.
+          With live tracking on, the payment goes to the wallet linked to <b>your</b> CipherPay account, using a fresh one-time
+          address for this invoice. The address box is skipped.
         </div>
       ) : (
         <div>
@@ -161,6 +189,28 @@ export default function NewInvoice() {
           )}
           {(touched || address.length > 3) && address && !addr.ok && <p className="hint text-red-400">{addr.error}</p>}
           {touched && !address && <p className="hint text-red-400">Required.</p>}
+          <div className="mt-2 flex items-center justify-between gap-2 text-xs text-zinc-400">
+            <label className="flex items-center gap-2">
+              <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+              Remember my address on this device
+            </label>
+            {saved && (
+              <button
+                type="button"
+                className="underline"
+                onClick={() => {
+                  forgetAddress();
+                  setSaved(false);
+                  setRemember(false);
+                }}
+              >
+                Forget it
+              </button>
+            )}
+          </div>
+          <div className="mt-3">
+            <WalletHelp />
+          </div>
         </div>
       )}
 
@@ -180,7 +230,7 @@ export default function NewInvoice() {
           {zec && usd ? (
             <>
               ≈ {usd}
-              {cfg?.network === "testnet" && " (at mainnet price — testnet ZEC has no value)"}
+              {cfg?.network === "testnet" && " (at mainnet price, testnet ZEC has no value)"}
             </>
           ) : amount && !zec ? (
             <span className="text-red-400">Enter a positive amount with at most 8 decimals.</span>
@@ -194,7 +244,7 @@ export default function NewInvoice() {
         <label className="label" htmlFor="label">
           What&apos;s it for?
         </label>
-        <input id="label" className="input" maxLength={80} value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Logo design — October" />
+        <input id="label" className="input" maxLength={80} value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Logo design, October" />
       </div>
 
       <div>
@@ -202,9 +252,9 @@ export default function NewInvoice() {
           Memo <span className="text-zinc-600">(optional, encrypted on-chain)</span>
         </label>
         <textarea id="memo" className="input min-h-[70px]" value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="INV-0042" />
-        <p className={`hint ${memoBytes > MAX_MEMO_BYTES ? "text-red-400" : ""}`}>
-          {memoBytes}/{MAX_MEMO_BYTES} bytes
-          {usesProvider && " · shown on the invoice page; CipherPay sets its own payment memo code"}
+        <p className={`hint ${memoBytes > memoLimit ? "text-red-400" : ""}`}>
+          {memoBytes}/{memoLimit} bytes
+          {usesProvider && " · goes into the encrypted payment memo, never to CipherPay's API"}
         </p>
       </div>
 
@@ -213,6 +263,31 @@ export default function NewInvoice() {
           Due date <span className="text-zinc-600">(optional)</span>
         </label>
         <input id="due" type="date" className="input" value={due} onChange={(e) => setDue(e.target.value)} />
+      </div>
+
+      <div className="rounded-xl border border-white/10 p-3 text-sm">
+        <label className="flex items-center gap-2 text-zinc-300">
+          <input type="checkbox" checked={showKey} onChange={(e) => setShowKey(e.target.checked)} />
+          Live tracking via CipherPay <span className="text-zinc-600">(optional)</span>
+        </label>
+        {showKey && (
+          <div className="mt-3 space-y-2">
+            <input
+              className="input font-mono text-xs"
+              type="password"
+              autoComplete="off"
+              spellCheck={false}
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder="cpay_sk_… (your own testnet key)"
+            />
+            <p className="hint">
+              Got your own CipherPay account? Paste its API key and the invoice page will show when the payment lands. We use the key
+              once to make this invoice and then drop it. It&apos;s never saved or put in the link.{" "}
+              <Link href="/privacy" className="underline">More</Link>
+            </p>
+          </div>
+        )}
       </div>
 
       {err && <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-300">{err}</p>}
@@ -226,3 +301,4 @@ export default function NewInvoice() {
     </form>
   );
 }
+

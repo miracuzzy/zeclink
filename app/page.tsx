@@ -3,8 +3,8 @@ import Link from "next/link";
 const points = [
   { t: "Shielded only", d: "ZecLink refuses transparent t-addresses. Amount, sender and receiver stay encrypted on-chain." },
   { t: "No database of you", d: "Invoice details ride in the link's #fragment, which browsers never send to our server." },
-  { t: "Live status", d: "With CipherPay, the page flips from awaiting → detected → confirmed in about a minute." },
-  { t: "Receipts", d: "Download or print a receipt the moment the payment confirms — generated in the browser." },
+  { t: "Your wallet, your money", d: "Paste your own shielded address. Money goes straight to you. We never hold funds or keys." },
+  { t: "Optional live tracking", d: "Have a CipherPay account? Add your key once per invoice and the page shows the payment land, with a receipt." },
 ];
 
 export default function Home() {
@@ -18,8 +18,8 @@ export default function Home() {
           Payment links for <span className="text-zec">shielded ZEC</span>.
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-lg text-zinc-400">
-          Send an invoice or a tip jar link. Get paid in private. Nobody — not your client, not a block explorer, not us — gets
-          a map of your income.
+          Send an invoice or a tip jar link. Get paid in private. Nobody gets a map of your income. Not your client, not a block
+          explorer, not us.
         </p>
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <Link href="/new" className="btn-primary px-6">
@@ -34,7 +34,7 @@ export default function Home() {
       <section className="card">
         <h2 className="mb-2 text-lg font-semibold">Why it matters</h2>
         <p className="text-zinc-400">
-          A freelancer getting paid by clients abroad on a public chain broadcasts every invoice: who pays them, how much,
+          A freelancer getting paid by clients on a public chain broadcasts every invoice: who pays them, how much,
           and when. That&apos;s a target on their back. With shielded Zcash, the payment settles in about a minute, peer to peer,
           and the only people who know the amount are the two people involved.
         </p>
@@ -60,7 +60,7 @@ export default function Home() {
             (standard ZIP-321).
           </li>
           <li>
-            <b className="text-zec">3.</b> They pay from any shielded wallet. The page shows it arrive and issues a receipt.
+            <b className="text-zec">3.</b> They pay from any shielded wallet, straight to you. You see it land in your wallet.
           </li>
         </ol>
       </section>

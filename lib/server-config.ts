@@ -1,7 +1,5 @@
 import "server-only";
 
-export type Provider = "demo" | "cipherpay";
-
 export const CIPHERPAY_DEFAULT_TESTNET = "https://api.testnet.cipherpay.app";
 export const CIPHERPAY_DEFAULT_MAINNET = "https://api.cipherpay.app";
 
@@ -15,15 +13,24 @@ export function cipherpayBase(): string {
   return zecNetwork() === "mainnet" ? CIPHERPAY_DEFAULT_MAINNET : CIPHERPAY_DEFAULT_TESTNET;
 }
 
-/** CipherPay is active only when an API key is configured. Otherwise the app runs in clearly-labelled demo mode. */
-export function activeProvider(): Provider {
-  return process.env.CIPHERPAY_API_KEY?.trim() ? "cipherpay" : "demo";
+/**
+ * The server's own CipherPay key belongs to the deployment owner. It is used ONLY for the owner's
+ * tip jar (handle in ZECLINK_OWNER_HANDLE), never as the default payee for anyone else.
+ */
+export function ownerHandle(): string | null {
+  const h = process.env.ZECLINK_OWNER_HANDLE?.trim().toLowerCase();
+  return h && process.env.CIPHERPAY_API_KEY?.trim() ? h : null;
+}
+
+/** A creator-supplied CipherPay API key. Checked for shape only; used for one request, never stored or logged. */
+export function isCipherpayKey(k: unknown): k is string {
+  return typeof k === "string" && /^cpay_(sk|rk)_[A-Za-z0-9_-]{8,200}$/.test(k.trim());
 }
 
 export function publicConfig() {
   return {
-    provider: activeProvider(),
     network: zecNetwork(),
+    ownerHandle: ownerHandle(),
     payeeName: process.env.ZECLINK_PAYEE_NAME?.trim() || null,
   };
 }

@@ -1,22 +1,19 @@
 "use client";
-import type { PublicConfig } from "@/lib/types";
 
-export default function ModeBanner({ cfg, compact = false }: { cfg: PublicConfig | null; compact?: boolean }) {
-  if (!cfg) return null;
-  if (cfg.provider === "cipherpay") {
+/** Honest one-liner about whether this page can see the payment. */
+export default function ModeBanner({ live, network, compact = false }: { live: boolean; network: "testnet" | "mainnet"; compact?: boolean }) {
+  if (live) {
     return (
       <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
-        <span className="font-semibold">Live detection</span> via CipherPay on Zcash <b>{cfg.network}</b>.
-        {!compact && " Payment status on this page comes from the Zcash network (mempool + blocks)."}
+        <span className="font-semibold">Live tracking</span> on Zcash <b>{network}</b>.
+        {!compact && " This page watches the network and updates by itself when the payment lands."}
       </div>
     );
   }
   return (
-    <div className="rounded-xl border border-amber-400/40 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
-      <span className="font-bold tracking-wide text-amber-300">DEMO MODE</span> — payment detection is{" "}
-      <b>simulated</b>.{" "}
-      {!compact &&
-        "The QR code is a real ZIP-321 request to the address entered, but this deployment cannot see payments yet (no CipherPay key configured). Status changes below are triggered by buttons, not by the blockchain."}
+    <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-zinc-300">
+      <span className="font-semibold">Direct payment</span> on Zcash <b>{network}</b>.
+      {!compact && " Money goes straight to the address in this link. This page can't see the chain, so the wallet is the place to check."}
     </div>
   );
 }
