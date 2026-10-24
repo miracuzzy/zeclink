@@ -143,6 +143,7 @@ export default function TipPage() {
             address={pending.address}
             amountZec={pending.amount}
             memo={pending.memo}
+            memoLabel="message"
             provider={live ? "cipherpay" : "direct"}
             network={live ? cfg.network : addrCheck.network!}
             invoiceId={pending.id}

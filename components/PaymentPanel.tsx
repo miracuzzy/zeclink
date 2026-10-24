@@ -12,6 +12,8 @@ interface Props {
   address: string;
   amountZec: string;
   memo?: string;
+  /** What to call the memo on the copy button: "memo" for invoices, "message" for tips. */
+  memoLabel?: "memo" | "message";
   provider: "direct" | "cipherpay";
   network: "testnet" | "mainnet";
   invoiceId: string;
@@ -65,25 +67,57 @@ export default function PaymentPanel(p: Props) {
 
   const live = p.provider === "cipherpay";
   const [markedSent, setMarkedSent] = useState(false);
+  // Some wallet scanners only read a bare address. The simple QR is just the address;
+  // the payer then types the amount and pastes the memo themselves.
+  const [simple, setSimple] = useState(false);
+  const qrValue = simple ? p.address : p.uri;
+  const memoWord = p.memoLabel ?? "memo";
 
   return (
     <div className="space-y-5">
       {(!live || status !== "confirmed") && (
         <div className="card space-y-4">
           <a href={p.uri} className="block" aria-label="Open in Zcash wallet">
-            <Qr value={p.uri} label="ZIP-321 payment request QR code" />
+            <Qr value={qrValue} label={simple ? "QR code with the receiving address only" : "ZIP-321 payment request QR code"} />
           </a>
-          <p className="text-center text-xs text-zinc-500">
-            Scan with a shielded Zcash wallet (Zashi/ZODL, Zingo, Ywallet, zkool…) · {p.network}
-          </p>
+          <div role="group" aria-label="QR code type" className="grid grid-cols-2 gap-1 rounded-xl border border-white/10 bg-black/30 p-1 text-sm">
+            <button
+              type="button"
+              aria-pressed={!simple}
+              onClick={() => setSimple(false)}
+              className={`rounded-lg px-3 py-2 ${!simple ? "bg-white/10 font-semibold text-white" : "text-zinc-400"}`}
+            >
+              Full payment code
+            </button>
+            <button
+              type="button"
+              aria-pressed={simple}
+              onClick={() => setSimple(true)}
+              className={`rounded-lg px-3 py-2 ${simple ? "bg-zec/15 font-semibold text-zec" : "text-zinc-400"}`}
+            >
+              Simple QR (address only)
+            </button>
+          </div>
+          {simple ? (
+            <p className="rounded-lg bg-zec/10 p-3 text-xs text-zinc-300" data-testid="simple-hint">
+              This QR has only the address. In your wallet, type <b className="font-mono">{p.amountZec} ZEC</b> exactly
+              {p.memo ? <> and paste the {memoWord}</> : null} using the buttons below.
+              {live && " It's a one-time address just for this payment, so it still shows as paid."}
+            </p>
+          ) : (
+            <p className="text-center text-xs text-zinc-500">
+              Scan with a shielded Zcash wallet (Zodl, Zingo, Ywallet, zkool…){p.network === "testnet" ? " · testnet" : ""}. If your wallet
+              can&apos;t read the full code, use the simple QR and paste the amount and {memoWord} yourself.
+            </p>
+          )}
           <div className="grid grid-cols-2 gap-2">
             <a href={p.uri} className="btn-primary col-span-2 text-center">
               Open in wallet
             </a>
-            <CopyButton text={p.uri} label="Copy payment link" />
             <CopyButton text={p.address} label="Copy address" />
-            <CopyButton text={p.amountZec} label={`Copy amount`} />
-            {p.memo ? <CopyButton text={p.memo} label="Copy memo" /> : <span />}
+            <CopyButton text={p.amountZec} label="Copy amount" />
+            {p.memo ? <CopyButton text={p.memo} label={`Copy ${memoWord}`} /> : null}
+            <CopyButton text={p.uri} label="Copy payment link" className={p.memo ? "" : "col-span-2"} />
           </div>
           <details className="text-xs text-zinc-500">
             <summary className="cursor-pointer select-none text-zinc-400">Backup: raw ZIP-321 URI</summary>
