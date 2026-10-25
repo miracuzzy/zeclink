@@ -1,5 +1,4 @@
 "use client";
-import { shortAddr } from "@/lib/zcash";
 
 export interface ReceiptData {
   invoiceId: string;
@@ -7,7 +6,6 @@ export interface ReceiptData {
   label?: string;
   memo?: string;
   amountZec: string;
-  address: string;
   createdAt: number;
   status: string;
   txid: string | null;
@@ -28,7 +26,6 @@ function receiptHtml(d: ReceiptData) {
     ...(d.label ? ([["For", d.label]] as [string, string][]) : []),
     ["Amount", `${d.amountZec} ZEC`],
     ["Network", `Zcash ${d.network} (shielded)`],
-    ["Receiving address", shortAddr(d.address, 12)],
     ["Requested", new Date(d.createdAt).toUTCString()],
     ["Confirmed", new Date(d.paidAt).toUTCString()],
     ["Detected by", d.detectedBy],

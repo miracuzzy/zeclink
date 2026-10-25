@@ -5,7 +5,7 @@ gets a map of your money. Not the person paying, not a block explorer, not ZecLi
 
 Made for anyone who gets paid, for example:
 
-- **Invoice a client**: a fixed amount with a due date and a memo.
+- **Invoice a client**: a fixed amount with what it's for and a note.
 - **Pay what you want**: an open-amount link for supporters, fans or donations, with private messages.
 - **Shop checkout**: one link per order, or one open-amount QR on the counter.
 - **Communities and organizers**: dues, tickets or donations, without a public list of who paid.
@@ -17,38 +17,39 @@ or [Zodl, formerly Zashi](https://zodl.com/download/)).
 
 ## What it does
 
-- **Payment links** (`/new` → `/i/<id>#…`): your shielded address, what it's for, memo, and an **optional** amount in ZEC.
-  - With an amount, it works like an invoice (USD estimate, optional due date).
-  - Without one, the payer picks the amount (in ZEC or USD) and can add a private message that goes in the encrypted memo.
-  The payer gets a big QR code (ZIP-321), a "Simple QR (address only)" switch for wallets that can't read the full code,
-  an "Open in wallet" button, copy buttons and the raw URI as backup.
-- Old tip jar links (`/t/<handle>#…`) still work and open as open-amount links. `/tip` redirects to `/new`.
+- **Payment links** (`/new` → `/i/<id>#…`): four fields. Your shielded address, the amount in ZEC, what it's for, and an
+  optional note that goes in the encrypted memo. A small "let the payer choose the amount" switch makes an open-amount link instead.
+- **Link ready screen**: copy the link, open it, or download the share QR as a PNG. The share QR only opens the payment page
+  in a phone camera. It isn't a wallet code.
+- **Payer page**: the amount (ZEC and USD), what it's for, the note, **one** wallet QR (a full ZIP-321 payment code with the
+  amount and memo filled in) and an "Open in wallet" button. The receiving address isn't printed on the page.
 - **Direct payments (default)**: money goes straight to the address in the link. There's no viewing key, so the page can't
-  see the chain. It honestly says "waiting for payment, check your wallet", and the payer can tap "I've sent it", which is only a
-  local note, never a confirmation.
-- **Optional live tracking**: if you have your own [CipherPay](https://www.cipherpay.app) account, paste its API key on `/new`.
-  The page then shows awaiting → detected (mempool, about 5 to 10 s) → confirmed (1 block, about 75 s) and gives a receipt.
+  see the chain and never says a payment arrived. Check your wallet.
+- **Live tracking (hidden, `/new?live`)**: if you have your own [CipherPay](https://www.cipherpay.app) account, paste its API key.
+  The page then shows awaiting → detected → confirmed and gives a receipt. Each invoice uses a fresh one-time address, so your
+  usual address is never in the link.
+- Old links (v1 base64 JSON fragments, and old tip jar links `/t/<handle>#…`) still open. `/tip` redirects to `/new`.
 - **Shielded only**: Unified (`u1…`, bech32m) and Sapling (`zs1…`, bech32) with full checksum checks.
   Transparent `t1/t3/tm`, TEX and Sprout addresses are rejected, and so are addresses from the wrong network.
-- **Remember my address** (optional): saved in your browser's localStorage only, with a "forget it" button. Keys are never saved.
+- **Remember on this device** (optional): saved in your browser's localStorage only, with a "forget it" button. Keys are never saved.
 - **`/privacy`** says exactly what is and isn't stored or seen, and by whom.
 
 ## Why it doesn't leak
 
 | Data | Where it lives |
 | --- | --- |
-| Address, amount, label, memo, due date, payee name | Only in the URL **fragment** (`#…`). Browsers never send fragments to servers, so the server, CDN and logs never see them. |
+| Address, amount, what it's for, note | Only in the URL **fragment** (`#…`), in a compact binary format (see below). Browsers never send fragments to servers, so the server, CDN and logs never see them. |
 | Database | **None.** ZecLink is stateless. |
 | Payer data | Not collected. No accounts, cookies, analytics, trackers or third-party fonts/scripts. |
 | Keys | ZecLink never handles spending keys or seeds. |
 | Your CipherPay API key (optional) | Sent once from your browser to `POST /api/invoices`, used for that single request to CipherPay, then dropped. Never stored, logged, returned, put in the link or kept in localStorage. |
-| What CipherPay sees (only if you use your key) | The amount, the generic name "ZecLink payment", and (via your viewing key) the payment that comes in. Never the label, memo, name or due date via its API. A fresh one-time address per invoice, so payments can't be linked on-chain. |
+| What CipherPay sees (only if you use your key) | The amount, the generic name "ZecLink payment", and (via your viewing key) the payment that comes in. Never what it's for or your note via its API. A fresh one-time address per invoice, so payments can't be linked on-chain. |
 | Memos & payer messages | Built **in the browser** into the ZIP-321 URI, base64url, max 512 bytes. In live mode the memo is `CP-XXXXXXXX` (CipherPay's reference code) + newline + your text, and only CipherPay's `memo` for payment 0 is replaced; address, amount and any extra outputs stay byte-for-byte. CipherPay matches payments by the unique per-invoice address, and the memo code is only a legacy fallback (see `src/invoices/matching.rs` in [cipherpay-api](https://github.com/atmospherelabs-dev/cipherpay-api)). **Caveat:** CipherPay holds the viewing key, so it could technically decrypt memos while scanning. Self-host CipherPay to remove that trust. |
 | Browser → third parties | **Nothing.** A strict CSP (`connect-src 'self'`) enforces it. Status and price lookups go through ZecLink's own `/api/*`. QR codes are drawn locally. |
 
 Other hardening: `Referrer-Policy: no-referrer`, `X-Frame-Options: DENY`, restrictive `Permissions-Policy`, `noindex`, no `X-Powered-By`.
 
-Honest limits: anyone holding the link can read the payment details (like an invoice PDF); the host sees page paths and IPs (paths only hold a random id or the CipherPay invoice id); the payer trusts the link sender to give the right address; direct payments can't be tracked by the page.
+Honest limits: anyone holding the link can read the payment details, including the receiving address (the wallet needs it, the page just doesn't print it), like an invoice PDF. A shielded address doesn't reveal your balance or other payments, and using a fresh address from your wallet per link keeps links from being tied together; the host sees page paths and IPs (paths only hold a random id or the CipherPay invoice id); the payer trusts the link sender to give the right address; direct payments can't be tracked by the page.
 
 ## Real vs mocked
 
@@ -103,8 +104,23 @@ app/api/invoices           POST → CipherPay create invoice (the user's own key
 app/api/status/[id]        GET  → CipherPay public status (proxied, no key)
 app/api/rates              GET  → CipherPay public rates (proxied, cached)
 lib/zcash.ts               bech32/bech32m validation, ZIP-321 builder, memo helpers
-lib/payload.ts             fragment encode/decode
+lib/payload.ts             fragment encode/decode (v2 compact + old v1 JSON)
+tests/payload.test.ts      round-trip tests for the link format (npm test)
 ```
+
+## Link format
+
+The link is `https://<site>/i/<id>#2<base64url>`. The `2` is the format version. The bytes are a short list of tagged fields:
+the address packed from its bech32 characters (5 bits each), the amount in zatoshis, what it's for, the note and when it was made.
+That keeps a typical link around 200 characters, so its QR stays small enough to scan off a laptop screen. Links made before
+this (base64 JSON, starting with `eyJ`) still open.
+
+### Why not hide the address completely?
+
+The payer's wallet needs a real address to pay, so it has to be in the link or QR. Deriving a fresh address per link in the browser
+would need your viewing key and Orchard crypto in the page, and a viewing key in a link would expose your incoming payments, so
+ZecLink doesn't do that. The options that work today: make a fresh address in your wallet for each link, or use live tracking,
+where CipherPay hands out a one-time address per invoice.
 
 ## License
 

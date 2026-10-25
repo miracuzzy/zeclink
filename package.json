@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "tsc --outDir /tmp/zeclink-test --module commonjs --target es2022 --skipLibCheck --esModuleInterop tests/payload.test.ts && node /tmp/zeclink-test/tests/payload.test.js"
   },
   "dependencies": {
     "next": "16.4.3",

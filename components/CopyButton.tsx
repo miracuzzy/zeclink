@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 
-export default function CopyButton({ text, label = "Copy", className = "" }: { text: string; label?: string; className?: string }) {
+export default function CopyButton({ text, label = "Copy", className = "", primary = false }: { text: string; label?: string; className?: string; primary?: boolean }) {
   const [done, setDone] = useState(false);
   return (
     <button
@@ -20,7 +20,7 @@ export default function CopyButton({ text, label = "Copy", className = "" }: { t
         setDone(true);
         setTimeout(() => setDone(false), 1500);
       }}
-      className={`btn-ghost ${className}`}
+      className={`${primary ? "btn-primary" : "btn-ghost"} ${className}`}
     >
       {done ? "Copied ✓" : label}
     </button>

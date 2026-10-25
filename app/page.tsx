@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 const who = [
-  { t: "Invoice a client", d: "Set the amount, add a due date and a memo, send the link. Great for freelancers." },
+  { t: "Invoice a client", d: "Set the amount and what it's for, send the link. They scan one QR and pay." },
   { t: "Pay what you want", d: "Leave the amount open for supporters, fans or donations. They can add a private message." },
   { t: "Shop checkout", d: "One link or QR per order, or an open-amount QR on the counter at your stall." },
   { t: "Communities and organizers", d: "Collect dues, ticket money or donations without a public list of who paid." },
@@ -11,7 +11,7 @@ const points = [
   { t: "Shielded only", d: "ZecLink refuses transparent t-addresses. Amount, sender and receiver stay encrypted on-chain." },
   { t: "No database of you", d: "Payment details ride in the link's #fragment, which browsers never send to our server." },
   { t: "Your wallet, your money", d: "Paste your own shielded address. Money goes straight to you. We never hold funds or keys." },
-  { t: "Optional live tracking", d: "Have a CipherPay account? Add your key to a fixed-amount link and the page shows the payment land, with a receipt." },
+  { t: "One QR to pay", d: "The payer scans one code. Amount and memo fill in by themselves in their wallet." },
 ];
 
 export default function Home() {
@@ -69,11 +69,10 @@ export default function Home() {
         <h2 className="mb-4 text-lg font-semibold">How it works</h2>
         <ol className="space-y-3 text-sm text-zinc-300">
           <li>
-            <b className="text-zec">1.</b> Enter your shielded address and what it&apos;s for. Add an amount, or leave it open.
+            <b className="text-zec">1.</b> Paste your shielded address, the amount and what it&apos;s for.
           </li>
           <li>
-            <b className="text-zec">2.</b> Share the link. Whoever is paying sees a big QR code and a one-tap &quot;open in wallet&quot; button
-            (standard ZIP-321).
+            <b className="text-zec">2.</b> Share the link. Whoever is paying sees one QR code and an &quot;open in wallet&quot; button.
           </li>
           <li>
             <b className="text-zec">3.</b> They pay from any shielded wallet, straight to you. You see it land in your wallet.

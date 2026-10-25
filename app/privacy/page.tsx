@@ -1,12 +1,12 @@
 export const metadata = { title: "Privacy | ZecLink" };
 
 const rows: [string, string, string][] = [
-  ["Your address, amount, label, memo, due date", "Only inside the link, after the #", "Browsers never send the # part to a server, so ZecLink's server, CDN and logs never see it."],
+  ["Your address, amount, what it's for, note", "Only inside the link, after the #", "Browsers never send the # part to a server, so ZecLink's server, CDN and logs never see it."],
   ["Payment link database", "None", "There's no database. Close the tab and the only copy is the link you shared."],
   ["Wallets and accounts", "We don't make any", "ZecLink never creates, holds or touches a wallet. You use your own and keep your own keys."],
   ["Payer identity, IP, wallet", "Not collected", "No accounts, no cookies, no analytics, no fingerprinting. The payer's wallet talks to the Zcash network, not to us."],
   ["Spending keys and seed phrases", "Never", "ZecLink never asks for them."],
-  ["Remembered address", "Your browser only", "If you tick \"remember my address on this device\", your address is saved in this browser's local storage so it's filled in next time. It's never sent to us. \"Forget it\" deletes it. API keys are never remembered."],
+  ["Remembered address", "Your browser only", "If you tick \"remember on this device\", your address is saved in this browser's local storage so it's filled in next time. It's never sent to us. \"Forget it\" deletes it. API keys are never remembered."],
   ["Third-party requests from your browser", "None", "A strict Content-Security-Policy only allows this site. Fonts and icons are served from this site and QR codes are drawn on your device."],
 ];
 
@@ -41,13 +41,30 @@ export default function Privacy() {
       </section>
 
       <section className="card space-y-3 text-sm text-zinc-300">
+        <h2 className="text-lg font-semibold text-zinc-100">What the payer sees</h2>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>The amount, what it&apos;s for and your note.</li>
+          <li>
+            Your receiving address is <b>not</b> printed on the page, but it is inside the link and the QR code, because their wallet
+            needs it to pay you. Anyone with the link could dig it out, so treat the link like an invoice.
+          </li>
+          <li>
+            With a shielded address that&apos;s ok: knowing it doesn&apos;t show your balance, your other payments or who else pays you.
+          </li>
+          <li>
+            Want more? Use a fresh address from your wallet for each link (most shielded wallets can make new ones, and they all land in
+            the same wallet). Then two payers can&apos;t tell their links go to the same person.
+          </li>
+        </ul>
+      </section>
+
+      <section className="card space-y-3 text-sm text-zinc-300">
         <h2 className="text-lg font-semibold text-zinc-100">Default: direct payments</h2>
         <ul className="list-disc space-y-1 pl-5">
           <li>You paste your own address. The payer&apos;s wallet pays it straight from the QR code or link.</li>
           <li>Nobody but you and the payer is involved. No third party sees anything.</li>
           <li>
-            Because nothing holds a viewing key, the page can&apos;t see the payment. It says &quot;waiting for payment&quot; and the
-            payer can tap &quot;I&apos;ve sent it&quot;. That&apos;s only a note on their device, never a confirmation. Check your
+            Because nothing holds a viewing key, the page can&apos;t see the payment and never says it&apos;s paid. Check your
             wallet.
           </li>
         </ul>
@@ -57,14 +74,15 @@ export default function Privacy() {
         <h2 className="text-lg font-semibold text-zinc-100">Optional: live tracking with your own CipherPay account</h2>
         <ul className="list-disc space-y-1 pl-5">
           <li>
-            If you have a CipherPay account (it holds a read-only viewing key for <b>your</b> wallet), you can paste its API key when
-            making a fixed-amount payment link. Your browser sends it to ZecLink&apos;s server once, the server uses it for that single request to
+            Hidden from the simple form (open <span className="font-mono">/new?live</span> to show it). If you have a CipherPay
+            account (it holds a read-only viewing key for <b>your</b> wallet), you can paste its API key when making a fixed-amount
+            payment link. Your browser sends it to ZecLink&apos;s server once, the server uses it for that single request to
             CipherPay and drops it. It&apos;s never saved, logged, put in the link or kept in your browser.
           </li>
           <li>
-            CipherPay gets only an <b>amount</b> and the generic name &quot;ZecLink payment&quot;. Your label, memo, name and due date
-            never go to its API. It returns a fresh one-time address in your wallet, so separate payments can&apos;t be linked
-            on-chain.
+            CipherPay gets only an <b>amount</b> and the generic name &quot;ZecLink payment&quot;. What it&apos;s for and your note
+            never go to its API. It returns a fresh one-time address in your wallet, so your usual address is never in the link
+            and separate payments can&apos;t be linked.
           </li>
           <li>
             Your memo is added to the payment request in the browser, after CipherPay&apos;s short reference code (like{" "}

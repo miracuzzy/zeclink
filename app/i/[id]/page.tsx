@@ -3,7 +3,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import PayView from "@/components/PayView";
 import { useConfig, useHash } from "@/lib/client";
-import { decodePayload, type InvoicePayload } from "@/lib/payload";
+import { decodeInvoice } from "@/lib/payload";
 
 export default function PayLinkPage() {
   const { id } = useParams<{ id: string }>();
@@ -12,8 +12,8 @@ export default function PayLinkPage() {
 
   if (hash === null || !cfg) return <p className="text-center text-zinc-500">Loading…</p>;
 
-  const inv = decodePayload<InvoicePayload>(hash, "inv");
-  if (!inv || inv.id !== id) {
+  const inv = decodeInvoice(hash, safeDecode(id));
+  if (!inv) {
     return (
       <div className="card mx-auto max-w-md text-center">
         <h1 className="text-xl font-semibold">Payment link not found</h1>
@@ -50,4 +50,12 @@ export default function PayLinkPage() {
       }}
     />
   );
+}
+
+function safeDecode(s: string): string {
+  try {
+    return decodeURIComponent(s);
+  } catch {
+    return s;
+  }
 }

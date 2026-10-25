@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import ModeBanner from "@/components/ModeBanner";
 import NetworkNotice from "@/components/NetworkNotice";
 import PaymentPanel from "@/components/PaymentPanel";
 import { fmtFiat, useRates } from "@/lib/client";
@@ -62,7 +61,7 @@ export default function PayView({ link, cfg }: { link: PayLink; cfg: PublicConfi
         {link.due && link.amountZec && <DuePill due={link.due} />}
         {link.expires && <span className="pill border-white/15 text-zinc-400">Expires {new Date(link.expires).toLocaleTimeString()}</span>}
       </div>
-      {link.memo && <p className="mt-3 rounded-lg bg-white/[0.03] p-2 text-sm text-zinc-400">Memo: {link.memo}</p>}
+      {link.memo && <p className="mt-2 text-sm text-zinc-400">{link.memo}</p>}
     </div>
   );
 
@@ -96,17 +95,15 @@ function Fixed({ link, cfg }: { link: PayLink; cfg: PublicConfig }) {
   const amount = live?.amount ?? link.amountZec!;
   return (
     <>
-      <ModeBanner live={isLive} network={addrCheck.network!} compact />
       <NetworkNotice linkNetwork={addrCheck.network!} siteNetwork={cfg.network} />
       <PaymentPanel
         uri={uri}
-        address={address}
         amountZec={amount}
         memo={live ? live.memo : link.memo}
         provider={isLive ? "cipherpay" : "direct"}
         network={isLive ? cfg.network : addrCheck.network!}
         invoiceId={link.id}
-        receipt={{ invoiceId: link.id, payee: link.name, label: link.label, memo: link.memo, amountZec: amount, address, createdAt: link.created, detectedBy: DETECTED_BY }}
+        receipt={{ invoiceId: link.id, payee: link.name, label: link.label, memo: link.memo, amountZec: amount, createdAt: link.created, detectedBy: DETECTED_BY }}
       />
     </>
   );
@@ -202,7 +199,6 @@ function Open({ link, cfg }: { link: PayLink; cfg: PublicConfig }) {
 
   return (
     <>
-      <ModeBanner live={live} network={live ? cfg.network : addrCheck.network!} compact />
       {!live && <NetworkNotice linkNetwork={addrCheck.network!} siteNetwork={cfg.network} />}
       {!(live && pending) && (
         <div className="card space-y-4">
@@ -261,14 +257,15 @@ function Open({ link, cfg }: { link: PayLink; cfg: PublicConfig }) {
             <textarea
               id="paymsg"
               className="input min-h-[64px]"
-              placeholder="Message (optional, encrypted in the memo)"
+              placeholder="Message (optional, private)"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
             />
-            <p className={`hint ${tooLong ? "text-red-400" : ""}`}>
-              {memoBytes}/{memoLimit} bytes
-              {live && " · stays in your browser and goes only into the encrypted shielded memo"}
-            </p>
+            {memoBytes > memoLimit * 0.8 && (
+              <p className={`hint ${tooLong ? "text-red-400" : ""}`}>
+                {memoBytes}/{memoLimit} bytes
+              </p>
+            )}
           </div>
           {err && <p className="text-sm text-red-300">{err}</p>}
           {live && (
@@ -283,10 +280,8 @@ function Open({ link, cfg }: { link: PayLink; cfg: PublicConfig }) {
           <PaymentPanel
             key={live ? shown.id : "direct"}
             uri={shown.uri}
-            address={shown.address}
             amountZec={shown.amount}
             memo={shown.memo}
-            memoLabel="message"
             provider={live ? "cipherpay" : "direct"}
             network={live ? cfg.network : addrCheck.network!}
             invoiceId={shown.id}
@@ -296,7 +291,6 @@ function Open({ link, cfg }: { link: PayLink; cfg: PublicConfig }) {
               label: link.label || "Payment",
               memo: shown.message,
               amountZec: shown.amount,
-              address: shown.address,
               createdAt: shown.createdAt,
               detectedBy: DETECTED_BY,
             }}
