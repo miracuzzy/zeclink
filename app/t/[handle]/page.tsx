@@ -15,8 +15,12 @@ export default function OldTipJarPage() {
   const [created] = useState(() => Date.now());
 
   if (hash === null || !cfg) return <p className="text-center text-zinc-500">Loading…</p>;
-  const tip = decodePayload<TipPayload>(hash, "tip");
-  if (!tip || tip.h !== handle) {
+  const decoded = decodePayload<TipPayload>(hash, "tip");
+  // The site owner's own page also opens without a fragment: /t/<owner handle>.
+  const isOwner = !!cfg.ownerHandle && cfg.ownerHandle === handle?.toLowerCase();
+  const tip: TipPayload | null =
+    decoded && decoded.h === handle ? decoded : isOwner ? { v: 1, k: "tip", p: "owner", h: cfg.ownerHandle!, n: cfg.payeeName ?? undefined } : null;
+  if (!tip) {
     return (
       <div className="card mx-auto max-w-md text-center">
         <h1 className="text-xl font-semibold">Payment link not found</h1>
