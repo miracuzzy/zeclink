@@ -3,7 +3,8 @@ import QRCode from "qrcode";
 import { LOCKUP_PATHS, LOCKUP_STROKE, LOCKUP_VIEWBOX } from "./brandLockup";
 
 // The shareable payment card: a PNG drawn on this device with <canvas>. Nothing is uploaded.
-// It never shows the receiving address. The QR holds the share link, which opens the payment page.
+// It never shows the receiving address as text. The QR holds the ZIP-321 payment request (zcash:...),
+// the same one the payment page shows, so the payer scans it with their wallet and pays.
 
 export const CARD_W = 1080;
 export const CARD_H = 1350;
@@ -16,7 +17,7 @@ const MUTED = "#9a9aa3";
 const FAINT = "#6b6b74";
 
 export interface CardInput {
-  link: string;
+  qr: string; // zcash: URI
   title?: string;
   zec?: string | null; // null / undefined = open amount
   usd?: string | null; // already formatted, like "$12.34"
@@ -118,14 +119,10 @@ function drawLockup(ctx: CanvasRenderingContext2D, x: number, y: number, height:
 }
 
 /** Draw the QR module by module on whole pixels, black on white, with a 4-module quiet zone. */
-function drawQr(ctx: CanvasRenderingContext2D, link: string, x: number, y: number, maxSize: number) {
-  // Prefer M (survives a blurry photo better); drop to L if that keeps modules bigger.
-  let qr = QRCode.create(link, { errorCorrectionLevel: "M" });
+function drawQr(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxSize: number) {
+  // Low error correction, like the payment page: fewest modules, so each one is as big as possible.
+  const qr = QRCode.create(text, { errorCorrectionLevel: "L" });
   const quiet = 4;
-  if (Math.floor(maxSize / (qr.modules.size + quiet * 2)) < 9) {
-    const l = QRCode.create(link, { errorCorrectionLevel: "L" });
-    if (l.modules.size < qr.modules.size) qr = l;
-  }
   const n = qr.modules.size;
   const cell = Math.max(1, Math.floor(maxSize / (n + quiet * 2)));
   const size = cell * (n + quiet * 2);
@@ -230,7 +227,8 @@ export async function renderCard(input: CardInput): Promise<Blob> {
   if (note) {
     y += 30;
     ctx.font = `400 30px ${f.body}`;
-    const lines = wrap(ctx, note, innerW, 2);
+    // A two-line title leaves room for one line of note, so the QR stays big.
+    const lines = wrap(ctx, note, innerW, titleLines.length > 1 ? 1 : 2);
     ctx.fillStyle = MUTED;
     for (const line of lines) {
       y += 30;
@@ -241,21 +239,21 @@ export async function renderCard(input: CardInput): Promise<Blob> {
 
   // QR panel takes the rest, above the footer.
   const footerTop = CARD_H - P - 70;
-  const qrTop = y + 44;
-  const panel = Math.min(innerW, footerTop - 40 - qrTop, 640);
+  const qrTop = y + 36;
+  const panel = Math.min(innerW, footerTop - 28 - qrTop, 640);
   const px = Math.round((CARD_W - panel) / 2);
   roundRect(ctx, px, qrTop, panel, panel, 28);
   ctx.fillStyle = "#ffffff";
   ctx.fill();
   // The QR's own quiet zone is white, so it blends into the panel. Small inset keeps rounded corners clear.
-  const inset = 12;
-  drawQr(ctx, input.link, px + inset, qrTop + inset, panel - inset * 2);
+  const inset = 8;
+  drawQr(ctx, input.qr, px + inset, qrTop + inset, panel - inset * 2);
 
   // Footer.
   ctx.textAlign = "center";
   ctx.font = `500 30px ${f.body}`;
   ctx.fillStyle = MIST;
-  ctx.fillText("Scan to pay privately with Zcash", CARD_W / 2, footerTop + 30);
+  ctx.fillText("Scan with your Zcash wallet", CARD_W / 2, footerTop + 30);
   ctx.font = `500 26px ${f.mono}`;
   ctx.fillStyle = FAINT;
   ctx.fillText("zeclink.vercel.app", CARD_W / 2, footerTop + 72);

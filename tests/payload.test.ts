@@ -30,3 +30,23 @@ assert.equal(decodeInvoice("#2" + "AAAA", "x"), null);
 assert.equal(decodeInvoice("", "x"), null);
 const v1len = old.length, v2len = encodeInvoiceV2(base).length;
 console.log(`ok: v1 fragment ${v1len} chars, v2 fragment ${v2len} chars`);
+
+// The card QR is the wallet payment request (ZIP-321), not the web link.
+import { walletUri } from "../lib/walletUri";
+import { parseZip321Primary } from "../lib/zcash";
+{
+  const u = walletUri(base)!;
+  assert.ok(u.startsWith(`zcash:${A}?amount=0.25&memo=`));
+  const p = parseZip321Primary(u)!;
+  assert.deepEqual([p.address, p.amount, p.memo], [A, "0.25", base.m]);
+  assert.ok(u.includes("label=Order%20%2312"));
+  const open = parseZip321Primary(walletUri({ ...base, z: undefined })!)!;
+  assert.deepEqual([open.address, open.amount, open.memo], [A, undefined, base.m]);
+  const long = { ...base, l: "x".repeat(80), m: "y".repeat(200) };
+  assert.ok(!walletUri(long, { compact: true })!.includes("label="));
+  assert.equal(parseZip321Primary(walletUri(long, { compact: true })!)!.memo, long.m);
+  const live = parseZip321Primary(walletUri(cases[6])!)!;
+  assert.deepEqual([live.address, live.amount], [A, "0.0123"]);
+  assert.equal(walletUri({ ...base, a: undefined }), null);
+}
+console.log("ok: wallet uri");

@@ -4,6 +4,8 @@ import { renderCard } from "@/lib/card";
 
 interface Props {
   link: string;
+  /** The ZIP-321 zcash: URI for the card QR, so a wallet can scan it and pay. */
+  qr: string;
   title?: string;
   zec?: string | null;
   usd?: string | null;
@@ -41,7 +43,7 @@ function fileName(title?: string) {
 }
 
 /** After "Create": a preview of the payment card and two ways to share. Nothing else. */
-export default function LinkReady({ link, title, zec, usd, note, onAnother }: Props) {
+export default function LinkReady({ link, qr, title, zec, usd, note, onAnother }: Props) {
   const [blob, setBlob] = useState<Blob | null>(null);
   const [url, setUrl] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
@@ -52,7 +54,7 @@ export default function LinkReady({ link, title, zec, usd, note, onAnother }: Pr
   useEffect(() => {
     let alive = true;
     let made: string | null = null;
-    renderCard({ link, title, zec, usd, note })
+    renderCard({ qr, title, zec, usd, note })
       .then((b) => {
         if (!alive) return;
         made = URL.createObjectURL(b);
@@ -65,7 +67,7 @@ export default function LinkReady({ link, title, zec, usd, note, onAnother }: Pr
       alive = false;
       if (made) URL.revokeObjectURL(made);
     };
-  }, [link, title, zec, usd, note]);
+  }, [qr, title, zec, usd, note]);
 
   function say(msg: string) {
     setToast(msg);
@@ -125,7 +127,7 @@ export default function LinkReady({ link, title, zec, usd, note, onAnother }: Pr
       >
         {url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={url} alt={`Payment card${title ? ` for ${title}` : ""} with a QR code that opens the payment page`} className="block h-full w-full" data-testid="card-preview" />
+          <img src={url} alt={`Payment card${title ? ` for ${title}` : ""} with a QR code to scan with a Zcash wallet`} className="block h-full w-full" data-testid="card-preview" />
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-zinc-500">{failed ? "Couldn't draw the card on this device." : "Making your card…"}</div>
         )}

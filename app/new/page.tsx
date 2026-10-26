@@ -5,6 +5,7 @@ import LinkReady from "@/components/LinkReady";
 import { fmtFiat, forgetAddress, loadSavedAddress, saveAddress, useConfig, useRates } from "@/lib/client";
 import { checkAddress, networkMismatchText, MAX_LIVE_MEMO_BYTES, MAX_MEMO_BYTES, normaliseZec, utf8ByteLength } from "@/lib/zcash";
 import { encodeInvoiceV2, randomId, type InvoicePayload } from "@/lib/payload";
+import { walletUri } from "@/lib/walletUri";
 
 export default function NewPaymentLink() {
   const cfg = useConfig();
@@ -20,6 +21,8 @@ export default function NewPaymentLink() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [link, setLink] = useState<string | null>(null);
+  // What the card QR holds: the wallet payment request itself, not the web link.
+  const [qr, setQr] = useState<string | null>(null);
   const [remember, setRemember] = useState(false);
   const [saved, setSaved] = useState(false);
   // Live tracking with the creator's own CipherPay key is still supported, just hidden
@@ -112,6 +115,9 @@ export default function NewPaymentLink() {
         };
       }
       setApiKey("");
+      const uri = walletUri(payload, { compact: true });
+      if (!uri) throw new Error("Could not make the payment request");
+      setQr(uri);
       setLink(`${window.location.origin}/i/${encodeURIComponent(payload.id)}#${encodeInvoiceV2(payload)}`);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Something went wrong");
@@ -120,10 +126,11 @@ export default function NewPaymentLink() {
     }
   }
 
-  if (link) {
+  if (link && qr) {
     return (
       <LinkReady
         link={link}
+        qr={qr}
         title={label.trim() || undefined}
         zec={openAmount ? null : zec}
         usd={usd}
