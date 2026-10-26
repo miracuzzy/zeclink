@@ -3,7 +3,6 @@ import { useState } from "react";
 import NetworkNotice from "@/components/NetworkNotice";
 import PaymentPanel from "@/components/PaymentPanel";
 import { fmtFiat, useRates } from "@/lib/client";
-import { DEMO_QR_TEXT, DemoBadge } from "@/lib/demo";
 import type { PublicConfig } from "@/lib/types";
 import { buildZip321, checkAddress, liveUri, MAX_LIVE_MEMO_BYTES, MAX_MEMO_BYTES, normaliseZec, utf8ByteLength } from "@/lib/zcash";
 
@@ -31,7 +30,7 @@ function Problem({ children }: { children: React.ReactNode }) {
   return <div className="card mx-auto max-w-md text-center text-red-300">{children}</div>;
 }
 
-export default function PayView({ link, cfg, demo = false }: { link: PayLink; cfg: PublicConfig; demo?: boolean }) {
+export default function PayView({ link, cfg }: { link: PayLink; cfg: PublicConfig }) {
   const rates = useRates();
   const title = link.name ? `Pay ${link.name}` : link.handle ? `Pay @${link.handle}` : "Payment request";
 
@@ -68,9 +67,8 @@ export default function PayView({ link, cfg, demo = false }: { link: PayLink; cf
 
   return (
     <div className="mx-auto max-w-md space-y-5">
-      {demo && <DemoBadge />}
       {header}
-      {link.amountZec ? <Fixed link={link} cfg={cfg} demo={demo} /> : <Open link={link} cfg={cfg} demo={demo} />}
+      {link.amountZec ? <Fixed link={link} cfg={cfg} /> : <Open link={link} cfg={cfg} />}
     </div>
   );
 }
@@ -85,24 +83,9 @@ function DuePill({ due }: { due: string }) {
   );
 }
 
-function Fixed({ link, cfg, demo }: { link: PayLink; cfg: PublicConfig; demo: boolean }) {
+function Fixed({ link, cfg }: { link: PayLink; cfg: PublicConfig }) {
   const rates = useRates();
   const usd = fmtFiat(Number(link.amountZec), rates?.usd, "USD");
-  if (demo) {
-    // Nothing payable in demo mode: the QR is plain text and there are no network calls.
-    return (
-      <PaymentPanel
-        demo
-        uri={DEMO_QR_TEXT}
-        amountZec={link.amountZec!}
-        memo={link.memo}
-        provider="direct"
-        network={cfg.network}
-        invoiceId={link.id}
-        receipt={{ invoiceId: link.id, payee: link.name, label: link.label, memo: link.memo, amountZec: link.amountZec!, createdAt: link.created, detectedBy: DETECTED_BY, usd }}
-      />
-    );
-  }
   const isLive = link.provider === "cipherpay";
   const address = isLive ? link.live?.pa ?? "" : link.address ?? "";
   const addrCheck = checkAddress(address);
@@ -138,7 +121,7 @@ interface Pending {
   createdAt: number;
 }
 
-function Open({ link, cfg, demo }: { link: PayLink; cfg: PublicConfig; demo: boolean }) {
+function Open({ link, cfg }: { link: PayLink; cfg: PublicConfig }) {
   const rates = useRates();
   const [raw, setRaw] = useState("");
   const [cur, setCur] = useState<"ZEC" | "USD">("ZEC");
@@ -147,19 +130,17 @@ function Open({ link, cfg, demo }: { link: PayLink; cfg: PublicConfig; demo: boo
   const [err, setErr] = useState<string | null>(null);
   const [pending, setPending] = useState<Pending | null>(null);
   const [liveFailed, setLiveFailed] = useState(false);
-  const [locked, setLocked] = useState(false);
 
   // Live only for this site owner's own link (server key). Everyone else's open links pay straight to their address.
   // The owner's link pays the owner's own address (ZECLINK_OWNER_ADDRESS) directly when there's no key for this
   // network, or if CipherPay errors.
   const ownerLink = link.provider === "owner" && !!cfg.ownerHandle && cfg.ownerHandle === link.handle;
-  if (!demo && link.provider === "owner" && !ownerLink) return <Problem>This link doesn&apos;t work on this site. Ask whoever shared it for a fresh one.</Problem>;
-  // Demo never goes live: no invoice, no status checks, nothing payable.
-  const live = !demo && ownerLink && cfg.ownerLive && !liveFailed;
+  if (link.provider === "owner" && !ownerLink) return <Problem>This link doesn&apos;t work on this site. Ask whoever shared it for a fresh one.</Problem>;
+  const live = ownerLink && cfg.ownerLive && !liveFailed;
   const payTo = ownerLink ? cfg.ownerAddress ?? "" : link.address ?? "";
-  if (!demo && ownerLink && !live && !payTo) return <Problem>This link isn&apos;t set up on this site right now. Try again later.</Problem>;
+  if (ownerLink && !live && !payTo) return <Problem>This link isn&apos;t set up on this site right now. Try again later.</Problem>;
   const addrCheck = checkAddress(payTo);
-  if (!demo && !live && !addrCheck.ok) return <Problem>This link&apos;s receiving address is not a valid shielded address. Do not pay it.</Problem>;
+  if (!live && !addrCheck.ok) return <Problem>This link&apos;s receiving address is not a valid shielded address. Do not pay it.</Problem>;
 
   // The payer can type ZEC or USD; the QR always asks for ZEC.
   const zec =
@@ -179,9 +160,7 @@ function Open({ link, cfg, demo }: { link: PayLink; cfg: PublicConfig; demo: boo
     !live && zec && !tooLong
       ? {
           id: link.id,
-          uri: demo
-            ? DEMO_QR_TEXT
-            : buildZip321({ address: payTo, amount: zec, memo: text, label: link.label || (link.name ? `Pay ${link.name}` : link.handle ? `Pay @${link.handle}` : undefined) }),
+          uri: buildZip321({ address: payTo, amount: zec, memo: text, label: link.label || (link.name ? `Pay ${link.name}` : link.handle ? `Pay @${link.handle}` : undefined) }),
           address: payTo,
           amount: zec,
           memo: text,
@@ -222,10 +201,9 @@ function Open({ link, cfg, demo }: { link: PayLink; cfg: PublicConfig; demo: boo
 
   return (
     <>
-      {!live && !demo && <NetworkNotice linkNetwork={addrCheck.network!} siteNetwork={cfg.network} />}
+      {!live && <NetworkNotice linkNetwork={addrCheck.network!} siteNetwork={cfg.network} />}
       {!(live && pending) && (
-        // Demo: once a payment is simulated the amount is locked, not hidden, so nothing moves.
-        <fieldset disabled={demo && locked} className="card min-w-0 space-y-4 transition-opacity duration-300 disabled:opacity-60">
+        <div className="card space-y-4">
           <p className="text-sm font-medium text-zinc-300">How much do you want to pay?</p>
           {link.suggestions && link.suggestions.length > 0 && (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -297,19 +275,17 @@ function Open({ link, cfg, demo }: { link: PayLink; cfg: PublicConfig; demo: boo
               {busy ? "Preparing…" : `Pay ${zec ?? ""} ZEC`}
             </button>
           )}
-        </fieldset>
+        </div>
       )}
       {shown && (
         <>
           <PaymentPanel
             key={live ? shown.id : "direct"}
-            demo={demo}
-            onLock={demo ? setLocked : undefined}
             uri={shown.uri}
             amountZec={shown.amount}
             memo={shown.memo}
             provider={live ? "cipherpay" : "direct"}
-            network={live || demo ? cfg.network : addrCheck.network!}
+            network={live ? cfg.network : addrCheck.network!}
             invoiceId={shown.id}
             receipt={{
               invoiceId: shown.id,

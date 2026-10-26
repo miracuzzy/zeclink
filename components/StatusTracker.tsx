@@ -8,17 +8,16 @@ const STEPS: { title: string; sub: string }[] = [
   { title: "Paid", sub: "All done, the receipt is ready" },
 ];
 
-/** Live payment status. Demo mode uses this exact same view. */
-export default function StatusTracker({ status, demo = false, done }: { status: PublicStatus; demo?: boolean; done?: number }) {
+/** Live payment status. */
+export default function StatusTracker({ status }: { status: PublicStatus }) {
   // Steps before idx are done. The step at idx is in progress, unless everything is done.
-  // Live: a confirmed payment is paid. Demo passes its own count so each step shows on its own.
-  const idx = done ?? (status === "confirmed" ? STEPS.length : status === "detected" || status === "underpaid" ? 2 : 0);
+  // A confirmed payment is paid.
+  const idx = status === "confirmed" ? STEPS.length : status === "detected" || status === "underpaid" ? 2 : 0;
   const terminalBad = status === "expired" || status === "cancelled" || status === "refunded";
   return (
     <div className="card" data-testid="status-tracker" data-status={status} data-done={idx}>
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-400">Payment status</h3>
-        {demo && <span className="pill border-amber-400/60 text-amber-200">Demo</span>}
       </div>
       {terminalBad ? (
         <p className="text-red-300">This payment request is {status}.</p>

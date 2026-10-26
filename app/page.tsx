@@ -32,9 +32,6 @@ export default function Home() {
           <Link href="/new" className="btn-primary px-6">
             Make a payment link
           </Link>
-          <Link href="/demo" className="btn-ghost px-6 !py-3">
-            Try a demo payment
-          </Link>
         </div>
       </section>
 

@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import PayView from "@/components/PayView";
 import { useConfig, useHash } from "@/lib/client";
-import { useDemoParam } from "@/lib/demo";
 import { decodePayload, randomId, type TipPayload } from "@/lib/payload";
 
 // Old tip jar links. They open as an open-amount payment link (the payer chooses the amount).
@@ -12,11 +11,10 @@ export default function OldTipJarPage() {
   const { handle } = useParams<{ handle: string }>();
   const hash = useHash();
   const cfg = useConfig();
-  const demo = useDemoParam();
   const [id] = useState(() => randomId());
   const [created] = useState(() => Date.now());
 
-  if (hash === null || !cfg || demo === null) return <p className="text-center text-zinc-500">Loading…</p>;
+  if (hash === null || !cfg) return <p className="text-center text-zinc-500">Loading…</p>;
   const decoded = decodePayload<TipPayload>(hash, "tip");
   // The site owner's own page also opens without a fragment: /t/<owner handle>.
   const isOwner = !!cfg.ownerHandle && cfg.ownerHandle === handle?.toLowerCase();
@@ -36,7 +34,6 @@ export default function OldTipJarPage() {
   return (
     <PayView
       cfg={cfg}
-      demo={demo}
       link={{
         id,
         provider: tip.p === "owner" || tip.p === "cipherpay" ? "owner" : "direct",

@@ -3,16 +3,14 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import PayView from "@/components/PayView";
 import { useConfig, useHash } from "@/lib/client";
-import { useDemoParam } from "@/lib/demo";
 import { decodeInvoice } from "@/lib/payload";
 
 export default function PayLinkPage() {
   const { id } = useParams<{ id: string }>();
   const hash = useHash();
   const cfg = useConfig();
-  const demo = useDemoParam();
 
-  if (hash === null || !cfg || demo === null) return <p className="text-center text-zinc-500">Loading…</p>;
+  if (hash === null || !cfg) return <p className="text-center text-zinc-500">Loading…</p>;
 
   const inv = decodeInvoice(hash, safeDecode(id));
   if (!inv) {
@@ -35,7 +33,6 @@ export default function PayLinkPage() {
   return (
     <PayView
       cfg={cfg}
-      demo={demo}
       link={{
         id: inv.id,
         provider,
