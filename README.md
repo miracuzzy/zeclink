@@ -19,8 +19,8 @@ or [Zodl, formerly Zashi](https://zodl.com/download/)).
 
 - **Payment links** (`/new` → `/i/<id>#…`): four fields. Your shielded address, the amount in ZEC, what it's for, and an
   optional note that goes in the encrypted memo. A small "let the payer choose the amount" switch makes an open-amount link instead.
-- **Link ready screen**: copy the link, open it, or download the share QR as a PNG. The share QR only opens the payment page
-  in a phone camera. It isn't a wallet code.
+- **Link ready screen**: two options. **Share link** (your phone's share sheet, or copy) or **Share card**, a branded
+  PNG with the amount, what it's for and a wallet QR (ZIP-321, amount and memo filled in). The address isn't printed on the card.
 - **Payer page**: the amount (ZEC and USD), what it's for, the note, **one** wallet QR (a full ZIP-321 payment code with the
   amount and memo filled in) and an "Open in wallet" button. The receiving address isn't printed on the page.
 - **Direct payments (default)**: money goes straight to the address in the link. There's no viewing key, so the page can't
@@ -28,7 +28,7 @@ or [Zodl, formerly Zashi](https://zodl.com/download/)).
 - **Live tracking (hidden, `/new?live`)**: if you have your own [CipherPay](https://www.cipherpay.app) account, paste its API key.
   The page then shows awaiting → detected → confirmed and gives a receipt. Each invoice uses a fresh one-time address, so your
   usual address is never in the link.
-- Old links (v1 base64 JSON fragments, and old tip jar links `/t/<handle>#…`) still open. `/tip` redirects to `/new`.
+- Old links (v1 base64 JSON fragments, and old `/t/<handle>#…` links) still open. `/tip` redirects to `/new`.
 - **Shielded only**: Unified (`u1…`, bech32m) and Sapling (`zs1…`, bech32) with full checksum checks.
   Transparent `t1/t3/tm`, TEX and Sprout addresses are rejected, and so are addresses from the wrong network.
 - **Remember on this device** (optional): saved in your browser's localStorage only, with a "forget it" button. Keys are never saved.
@@ -67,7 +67,7 @@ Honest limits: anyone holding the link can read the payment details, including t
   (`POST /api/payment-links/{slug}/checkout`) answers `403 Invalid or missing checkout key` for third parties. Keeping
   people's keys would fix it, and we won't. So open-amount links are direct payments, and live tracking with your
   own key needs a fixed amount.
-- The one exception is the site owner's own open-amount link (old tip jar): if `ZECLINK_OWNER_HANDLE` and the owner key are set, `/t/<that handle>`
+- The one exception is the site owner's own open-amount link: if `ZECLINK_OWNER_HANDLE` and the owner key are set, `/t/<that handle>`
   gets live tracking into the owner's own CipherPay wallet. The server key is never used for anyone else.
 
 ## Run locally
@@ -98,7 +98,8 @@ Next.js (App Router) · TypeScript · Tailwind CSS · [`qrcode`](https://www.npm
 ## Architecture
 
 ```
-app/new                    create payment links (client-side; payload → URL fragment); /tip redirects here
+app/new                    create payment links (client-side; payload → URL fragment), share link or share card
+lib/card.ts                share card PNG (canvas) with the wallet QR
 app/i/[id], app/t/[handle] payer page, fixed or open amount (components/PayView.tsx)
 app/api/invoices           POST → CipherPay create invoice (the user's own key, or the owner's own link)
 app/api/status/[id]        GET  → CipherPay public status (proxied, no key)

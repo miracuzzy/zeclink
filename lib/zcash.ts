@@ -152,7 +152,7 @@ export function shortAddr(a: string, n = 10): string {
 // (e.g. "CP-1A2B3C4D"). CipherPay matches payments by the invoice's unique diversified
 // address first; the memo code is only a fallback for legacy invoices
 // (cipherpay-api src/invoices/matching.rs). So we can safely put our own memo in the
-// URI — built here, in the browser — as long as the address and amount stay untouched.
+// URI (built here, in the browser) as long as the address and amount stay untouched.
 // We keep the memo code as the first line anyway, for that fallback and for the
 // recipient's own reconciliation.
 // ---------------------------------------------------------------------------
@@ -207,8 +207,8 @@ export function parseZip321Primary(uri: string): Zip321Primary | null {
 
 /**
  * Replace (or add) the memo of payment 0 in a provider-issued ZIP-321 URI, leaving every
- * other parameter — address, amount and any extra outputs (e.g. CipherPay's fee output,
- * `address.1`/`amount.1`/`memo.1`) — byte-for-byte unchanged.
+ * other parameter (address, amount and any extra outputs, e.g. CipherPay's fee output,
+ * `address.1`/`amount.1`/`memo.1`) byte-for-byte unchanged.
  * Returns null if the URI isn't a parseable request to `expectedAddress`.
  */
 export function withPrimaryMemo(uri: string, expectedAddress: string, memo: string): string | null {
