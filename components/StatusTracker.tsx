@@ -1,36 +1,36 @@
 "use client";
 import type { PublicStatus } from "@/lib/types";
 
-const STEPS: { key: PublicStatus; title: string; sub: string }[] = [
-  { key: "awaiting", title: "Awaiting payment", sub: "Scan the QR with a shielded wallet" },
-  { key: "detected", title: "Detected", sub: "Seen in the mempool (about 5 to 10s)" },
-  { key: "confirmed", title: "Confirmed", sub: "Mined in a block (about 75s)" },
+const STEPS: { title: string; sub: string }[] = [
+  { title: "Awaiting payment", sub: "Scan the QR with a shielded wallet" },
+  { title: "Payment detected", sub: "Seen in the mempool, usually within seconds" },
+  { title: "Confirmed", sub: "Mined in a block, about a minute" },
+  { title: "Paid", sub: "All done, the receipt is ready" },
 ];
 
-export default function StatusTracker({ status }: { status: PublicStatus }) {
-  const idx = status === "confirmed" ? 2 : status === "detected" || status === "underpaid" ? 1 : 0;
+/** Live payment status. Demo mode uses this exact same view. */
+export default function StatusTracker({ status, demo = false }: { status: PublicStatus; demo?: boolean }) {
+  // Steps before idx are done. The step at idx is in progress, unless everything is done.
+  const idx = status === "confirmed" ? STEPS.length : status === "detected" || status === "underpaid" ? 2 : 0;
   const terminalBad = status === "expired" || status === "cancelled" || status === "refunded";
   return (
-    <div className="card">
+    <div className="card" data-testid="status-tracker" data-status={status}>
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-400">Payment status</h3>
+        {demo && <span className="pill border-amber-400/60 text-amber-200">Demo</span>}
       </div>
       {terminalBad ? (
         <p className="text-red-300">This payment request is {status}.</p>
       ) : (
         <ol className="space-y-3">
           {STEPS.map((s, i) => {
-            const done = i < idx || (i === idx && status === "confirmed");
-            const active = i === idx && status !== "confirmed";
+            const done = i < idx;
+            const active = i === idx;
             return (
-              <li key={s.key} className="flex items-start gap-3">
+              <li key={s.title} className="flex items-start gap-3">
                 <span
-                  className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs ${
-                    done
-                      ? "border-zec bg-zec text-black"
-                      : active
-                        ? "border-zec text-zec animate-pulse"
-                        : "border-zinc-700 text-zinc-600"
+                  className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs transition-colors duration-500 ${
+                    done ? "border-zec bg-zec text-black" : active ? "animate-pulse border-zec text-zec" : "border-zinc-700 text-zinc-600"
                   }`}
                 >
                   {done ? "✓" : i + 1}
@@ -45,7 +45,7 @@ export default function StatusTracker({ status }: { status: PublicStatus }) {
         </ol>
       )}
       {status === "underpaid" && (
-        <p className="mt-3 text-sm text-amber-300">A payment was detected but it is less than the amount requested.</p>
+        <p className="mt-3 text-sm text-amber-300">A payment came in, but it&apos;s less than the amount asked for.</p>
       )}
     </div>
   );

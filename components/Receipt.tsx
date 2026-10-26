@@ -13,6 +13,7 @@ export interface ReceiptData {
   simulated: boolean;
   network: string;
   detectedBy: string;
+  usd?: string | null;
 }
 
 function esc(s: string) {
@@ -24,15 +25,15 @@ function receiptHtml(d: ReceiptData) {
     ["Receipt", d.invoiceId],
     ...(d.payee ? ([["Paid to", d.payee]] as [string, string][]) : []),
     ...(d.label ? ([["For", d.label]] as [string, string][]) : []),
-    ["Amount", `${d.amountZec} ZEC`],
-    ["Network", `Zcash ${d.network} (shielded)`],
+    ["Amount", `${d.amountZec} ZEC${d.usd ? ` (about ${d.usd})` : ""}`],
+    ["Network", d.simulated ? "None. Demo, nothing was sent" : `Zcash ${d.network} (shielded)`],
     ["Requested", new Date(d.createdAt).toUTCString()],
     ["Confirmed", new Date(d.paidAt).toUTCString()],
-    ["Detected by", d.detectedBy],
-    ...(d.txid ? ([["Transaction id", d.txid]] as [string, string][]) : []),
+    ["Detected by", d.simulated ? "Demo simulation" : d.detectedBy],
+    ...(d.txid ? ([[d.simulated ? "Transaction id (demo, not real)" : "Transaction id", d.txid]] as [string, string][]) : []),
     ...(d.memo ? ([["Memo", d.memo]] as [string, string][]) : []),
   ];
-  return `<!doctype html><html><head><meta charset="utf-8"><title>ZecLink receipt ${esc(d.invoiceId)}</title>
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${d.simulated ? "DEMO " : ""}ZecLink receipt ${esc(d.invoiceId)}</title>
 <style>body{font-family:system-ui,sans-serif;max-width:560px;margin:40px auto;padding:0 20px;color:#111}
 h1{font-size:20px}table{width:100%;border-collapse:collapse}td{padding:8px 0;border-bottom:1px solid #eee;vertical-align:top;font-size:14px}
 td:first-child{color:#666;width:40%}.w{border:2px solid #c00;color:#c00;padding:10px;font-weight:700;text-align:center;margin:16px 0}
@@ -50,16 +51,16 @@ export default function Receipt({ data }: { data: ReceiptData }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `zeclink-receipt-${data.invoiceId}.html`;
+    a.download = `zeclink-${data.simulated ? "demo-" : ""}receipt-${data.invoiceId}.html`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
   return (
-    <div className="card print-area space-y-4">
+    <div className="card print-area space-y-4" data-testid="receipt">
       <div className="flex items-center gap-3">
         <span className="flex h-10 w-10 items-center justify-center rounded-full bg-zec text-xl text-black">✓</span>
         <div>
-          <p className="text-lg font-semibold">Payment confirmed</p>
+          <p className="text-lg font-semibold">{data.simulated ? "Paid (demo)" : "Payment confirmed"}</p>
           <p className="text-xs text-zinc-400">Receipt {data.invoiceId}</p>
         </div>
       </div>
@@ -83,15 +84,27 @@ export default function Receipt({ data }: { data: ReceiptData }) {
         )}
         <dt className="text-zinc-500">Amount</dt>
         <dd className="font-mono">{data.amountZec} ZEC</dd>
+        {data.usd && (
+          <>
+            <dt className="text-zinc-500">In USD</dt>
+            <dd>≈ {data.usd}</dd>
+          </>
+        )}
+        {data.memo && (
+          <>
+            <dt className="text-zinc-500">Memo</dt>
+            <dd className="whitespace-pre-wrap break-words">{data.memo}</dd>
+          </>
+        )}
         <dt className="text-zinc-500">Network</dt>
-        <dd>Zcash {data.network} · shielded</dd>
-        <dt className="text-zinc-500">Confirmed</dt>
+        <dd>{data.simulated ? "None. Demo, nothing was sent" : `Zcash ${data.network} · shielded`}</dd>
+        <dt className="text-zinc-500">{data.simulated ? "Time" : "Confirmed"}</dt>
         <dd>{new Date(data.paidAt).toLocaleString()}</dd>
         <dt className="text-zinc-500">Detected by</dt>
-        <dd>{data.detectedBy}</dd>
+        <dd>{data.simulated ? "Demo simulation" : data.detectedBy}</dd>
         {data.txid && (
           <>
-            <dt className="text-zinc-500">Tx id</dt>
+            <dt className="text-zinc-500">{data.simulated ? "Tx id (demo)" : "Tx id"}</dt>
             <dd className="break-all font-mono text-xs">{data.txid}</dd>
           </>
         )}
