@@ -4,7 +4,6 @@ import NetworkNotice from "@/components/NetworkNotice";
 import PaymentPanel from "@/components/PaymentPanel";
 import { fmtFiat, useRates } from "@/lib/client";
 import { DEMO_QR_TEXT, DemoBadge } from "@/lib/demo";
-import type { PublicStatus } from "@/lib/types";
 import type { PublicConfig } from "@/lib/types";
 import { buildZip321, checkAddress, liveUri, MAX_LIVE_MEMO_BYTES, MAX_MEMO_BYTES, normaliseZec, utf8ByteLength } from "@/lib/zcash";
 
@@ -148,7 +147,7 @@ function Open({ link, cfg, demo }: { link: PayLink; cfg: PublicConfig; demo: boo
   const [err, setErr] = useState<string | null>(null);
   const [pending, setPending] = useState<Pending | null>(null);
   const [liveFailed, setLiveFailed] = useState(false);
-  const [demoStatus, setDemoStatus] = useState<PublicStatus>("awaiting");
+  const [locked, setLocked] = useState(false);
 
   // Live only for this site owner's own link (server key). Everyone else's open links pay straight to their address.
   // The owner's link pays the owner's own address (ZECLINK_OWNER_ADDRESS) directly when there's no key for this
@@ -224,8 +223,9 @@ function Open({ link, cfg, demo }: { link: PayLink; cfg: PublicConfig; demo: boo
   return (
     <>
       {!live && !demo && <NetworkNotice linkNetwork={addrCheck.network!} siteNetwork={cfg.network} />}
-      {!(live && pending) && !(demo && demoStatus !== "awaiting") && (
-        <div className="card space-y-4">
+      {!(live && pending) && (
+        // Demo: once a payment is simulated the amount is locked, not hidden, so nothing moves.
+        <fieldset disabled={demo && locked} className="card min-w-0 space-y-4 transition-opacity duration-300 disabled:opacity-60">
           <p className="text-sm font-medium text-zinc-300">How much do you want to pay?</p>
           {link.suggestions && link.suggestions.length > 0 && (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -297,14 +297,14 @@ function Open({ link, cfg, demo }: { link: PayLink; cfg: PublicConfig; demo: boo
               {busy ? "Preparing…" : `Pay ${zec ?? ""} ZEC`}
             </button>
           )}
-        </div>
+        </fieldset>
       )}
       {shown && (
         <>
           <PaymentPanel
             key={live ? shown.id : "direct"}
             demo={demo}
-            onStatus={demo ? setDemoStatus : undefined}
+            onLock={demo ? setLocked : undefined}
             uri={shown.uri}
             amountZec={shown.amount}
             memo={shown.memo}
@@ -314,7 +314,7 @@ function Open({ link, cfg, demo }: { link: PayLink; cfg: PublicConfig; demo: boo
             receipt={{
               invoiceId: shown.id,
               payee: link.name ? (link.handle ? `${link.name} (@${link.handle})` : link.name) : link.handle ? `@${link.handle}` : undefined,
-              label: link.label || "Payment",
+              label: link.label || (link.handle ? `Tip to @${link.handle}` : link.name ? `Payment to ${link.name}` : "Payment"),
               memo: shown.message,
               amountZec: shown.amount,
               createdAt: shown.createdAt,

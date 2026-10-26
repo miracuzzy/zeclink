@@ -57,6 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </Link>
             </div>
           </nav>
+          <div id="topbar-slot" />
         </header>
         <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">{children}</main>
         <footer className="border-t border-white/5 py-6 text-center text-xs text-zinc-500">

@@ -45,7 +45,12 @@ ${d.simulated ? '<div class="w">DEMO, NOT A REAL PAYMENT</div>' : ""}
 </body></html>`;
 }
 
-export default function Receipt({ data }: { data: ReceiptData }) {
+/** Long ids get a middle ellipsis on screen. The full id is in the tooltip and the downloaded receipt. */
+function shortId(id: string) {
+  return id.length > 30 ? `${id.slice(0, 13)}…${id.slice(-14)}` : id;
+}
+
+export default function Receipt({ data, printable = true }: { data: ReceiptData; printable?: boolean }) {
   const download = () => {
     const blob = new Blob([receiptHtml(data)], { type: "text/html" });
     const url = URL.createObjectURL(blob);
@@ -56,7 +61,7 @@ export default function Receipt({ data }: { data: ReceiptData }) {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
   return (
-    <div className="card print-area space-y-4" data-testid="receipt">
+    <div className={`card space-y-4 ${printable ? "print-area" : ""}`} data-testid="receipt">
       <div className="flex items-center gap-3">
         <span className="flex h-10 w-10 items-center justify-center rounded-full bg-zec text-xl text-black">✓</span>
         <div>
@@ -69,7 +74,7 @@ export default function Receipt({ data }: { data: ReceiptData }) {
           DEMO, NOT A REAL PAYMENT
         </p>
       )}
-      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+      <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm">
         {data.payee && (
           <>
             <dt className="text-zinc-500">Paid to</dt>
@@ -105,15 +110,17 @@ export default function Receipt({ data }: { data: ReceiptData }) {
         {data.txid && (
           <>
             <dt className="text-zinc-500">{data.simulated ? "Tx id (demo)" : "Tx id"}</dt>
-            <dd className="break-all font-mono text-xs">{data.txid}</dd>
+            <dd className="truncate font-mono text-xs" title={data.txid}>
+              {shortId(data.txid)}
+            </dd>
           </>
         )}
       </dl>
-      <div className="no-print flex gap-2">
-        <button className="btn-primary flex-1" onClick={download}>
+      <div className="no-print grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+        <button className="btn-primary whitespace-nowrap" onClick={download}>
           Download receipt
         </button>
-        <button className="btn-ghost flex-1" onClick={() => window.print()}>
+        <button className="btn-ghost whitespace-nowrap px-5" onClick={() => window.print()}>
           Print
         </button>
       </div>

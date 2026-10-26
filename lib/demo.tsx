@@ -1,5 +1,6 @@
 "use client";
 import { useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 
 // Demo mode: shows the whole payment flow without any real money.
 // Nothing in demo mode can be paid: the QR holds plain text, not a payment request,
@@ -25,12 +26,29 @@ export function demoTxid(): string {
   return `demo-${hex}-not-a-real-tx`;
 }
 
+/** A receipt number in the same DEMO-XXXX-XXXX format everywhere. */
+export function demoReceiptId(): string {
+  const a = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const b = crypto.getRandomValues(new Uint8Array(8));
+  const c = Array.from(b, (x) => a[x % a.length]).join("");
+  return `DEMO-${c.slice(0, 4)}-${c.slice(4)}`;
+}
+
+const getSlot = () => document.getElementById("topbar-slot");
+
+/**
+ * "Demo mode, no real payment", as a bar inside the sticky site header. It takes its own
+ * space there, so it's always on screen and never covers the page.
+ */
 export function DemoBadge() {
-  return (
-    <div className="sticky top-16 z-20 flex justify-center" data-testid="demo-badge">
-      <span className="rounded-full border border-amber-400/60 bg-[#1a1405]/95 px-4 py-1.5 text-sm font-semibold text-amber-200 shadow-lg backdrop-blur">
+  const slot = useSyncExternalStore(noSubscribe, getSlot, () => null);
+  const bar = (
+    <div className="border-t border-amber-400/30 bg-[#1a1405]" data-testid="demo-badge">
+      <p className="mx-auto max-w-3xl px-4 py-2 text-center text-sm font-semibold text-amber-200">
+        <span aria-hidden className="mr-2 inline-block h-2 w-2 rounded-full bg-amber-300 align-middle" />
         Demo mode, no real payment
-      </span>
+      </p>
     </div>
   );
+  return slot ? createPortal(bar, slot) : null;
 }
