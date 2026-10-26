@@ -1,15 +1,10 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import CopyButton from "@/components/CopyButton";
-import Qr, { downloadQr } from "@/components/Qr";
+import LinkReady from "@/components/LinkReady";
 import { fmtFiat, forgetAddress, loadSavedAddress, saveAddress, useConfig, useRates } from "@/lib/client";
 import { checkAddress, networkMismatchText, MAX_LIVE_MEMO_BYTES, MAX_MEMO_BYTES, normaliseZec, utf8ByteLength } from "@/lib/zcash";
 import { encodeInvoiceV2, randomId, type InvoicePayload } from "@/lib/payload";
-
-// The share QR only holds the link, and phones read it off a screen. Low error correction
-// keeps it at the fewest, biggest modules.
-const SHARE_EC = "L" as const;
 
 export default function NewPaymentLink() {
   const cfg = useConfig();
@@ -127,36 +122,14 @@ export default function NewPaymentLink() {
 
   if (link) {
     return (
-      <div className="mx-auto max-w-3xl space-y-5">
-        <h1 className="text-2xl font-bold">Your payment link is ready</h1>
-        <div className="card grid gap-6 md:grid-cols-[minmax(0,360px)_1fr] md:items-start">
-          <div className="space-y-2">
-            <Qr value={link} size={360} ec={SHARE_EC} label="QR code that opens the payment page" />
-            <p className="text-center text-sm font-medium text-zinc-200">Scan with a phone camera to open the payment page</p>
-            <p className="text-center text-xs text-zinc-500">This one opens the page, it&apos;s not for scanning in a wallet. The wallet QR is on the payment page.</p>
-          </div>
-          <div className="space-y-3">
-            <p className="text-sm text-zinc-400">Send this link to whoever is paying you. They open it, scan one QR with their wallet and pay.</p>
-            <CopyButton text={link} label="Copy link" primary className="w-full" />
-            <div className="grid grid-cols-2 gap-2">
-              <a className="btn-ghost" href={link} target="_blank" rel="noopener noreferrer">
-                Open link
-              </a>
-              <button type="button" className="btn-ghost" onClick={() => downloadQr(link, "zeclink-qr.png", SHARE_EC)}>
-                Download QR
-              </button>
-            </div>
-            <code className="block max-h-24 overflow-y-auto break-all rounded-lg bg-black/40 p-3 text-xs text-zinc-400">{link}</code>
-            <p className="text-xs text-zinc-500">
-              The payment details sit after the <span className="font-mono">#</span>, which never reaches our server. We don&apos;t keep a
-              copy, so save the link if you need it again.
-            </p>
-            <button className="btn-ghost w-full" onClick={() => setLink(null)}>
-              Make another link
-            </button>
-          </div>
-        </div>
-      </div>
+      <LinkReady
+        link={link}
+        title={label.trim() || undefined}
+        zec={openAmount ? null : zec}
+        usd={usd}
+        note={memo.trim() || undefined}
+        onAnother={() => setLink(null)}
+      />
     );
   }
 
